@@ -21,6 +21,18 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000). Lender view: [http://127.0.0.1:8000/lender](http://127.0.0.1:8000/lender).
 
+## Demo screenshots (local)
+
+With the app running on port 8000:
+
+```bash
+pip install -r requirements-dev.txt
+python -m playwright install chromium
+python tools/screenshots.py
+```
+
+Outputs `screenshots/*.png` and `screenshots.zip`.
+
 ## Deploy on Render (free tier)
 
 1. Push this repo to GitHub.
