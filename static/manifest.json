@@ -1,0 +1,17 @@
+{
+  "name": "Woza Rewards",
+  "short_name": "Woza",
+  "description": "Pay today. Get more tomorrow.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E0A1F",
+  "theme_color": "#6D28D9",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
