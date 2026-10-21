@@ -138,7 +138,16 @@ def month_activity_line(bill: Bill, period: str = CURRENT_PERIOD) -> str:
         return f"+{fmt_pts_num(pay.points_awarded)} pts"
     if bill.verification == "bank_feed":
         return f"+{fmt_pts_num(bill.points_per_month)} pts once your bank confirms it"
-    return f"Due {bill.points_per_month // 100} Nov"
+    return f"Due 1 Nov · earns {fmt_pts_num(bill.points_per_month)} pts"
+
+
+def home_bill_badge(bill: Bill, period: str = CURRENT_PERIOD) -> str:
+    pay = payment_for_period(bill, period)
+    if bill.verification == "bank_feed":
+        return "Bank debit order, 1 Nov"
+    if pay:
+        return "Paid"
+    return "Due 1 Nov"
 
 
 def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
@@ -165,6 +174,8 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
         "is_bank_debit": bill.verification == "bank_feed",
         "payable_through_woza": is_woza and pay is None and grace is None,
         "month_line": month_activity_line(bill, period),
+        "home_badge": home_bill_badge(bill, period),
+        "pay_sheet_title": f"Pay {fmt_rand(bill.amount_cents)} {bill.name.lower()} through Woza",
     }
     if pay:
         state["status_line"] = f"+{fmt_pts_num(pay.points_awarded)} pts"
@@ -310,7 +321,19 @@ def build_me_payload(user: User, db: Session) -> dict:
             ],
             "benefits": {
                 "grace_months": user.grace_months,
+                "grace_months_earned": user.grace_months_earned,
+                "grace_months_used": grace_used,
                 "tier": status,
+                "gold_unlocks": [
+                    "2 grace months available (3 earned, 1 used)",
+                    "Gold rate at partner lenders",
+                    "Rent and utilities reported to the bureau",
+                ],
+                "black_unlocks": [
+                    "48 on-time months for Black tier",
+                    "Highest partner lender rates",
+                    "Priority support and exclusive offers",
+                ],
                 "bureau": {
                     "rent_months": 36,
                     "utilities_months": 30,
@@ -425,10 +448,16 @@ def pay_bill_endpoint(body: PayBody, request: Request, db: DbDep):
     bill = db.query(Bill).filter(Bill.id == body.bill_id, Bill.user_id == user.id).first()
     if not bill:
         raise HTTPException(404, "Bill not found")
-    pay_bill(user, db, bill)
+    payment = pay_bill(user, db, bill)
     db.commit()
     db.refresh(user)
-    return build_me_payload(user, db)
+    payload = build_me_payload(user, db)
+    payload["event"] = {
+        "kind": "payment",
+        "points_added": payment.points_awarded,
+        "bill_name": bill.name,
+    }
+    return payload
 
 
 @app.post("/api/pay_all")
@@ -483,7 +512,14 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
     )
     db.commit()
     db.refresh(user)
-    return build_me_payload(user, db)
+    payload = build_me_payload(user, db)
+    payload["event"] = {
+        "kind": "redeem",
+        "option": body.option,
+        "points_spent": body.points,
+        "value_display": fmt_rand(value_cents),
+    }
+    return payload
 
 
 @app.post("/api/reset")

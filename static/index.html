@@ -3,26 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#6D28D9" />
+  <meta name="theme-color" content="#5B2BD9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Woza Rewards</title>
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0E0A1F;
-      --card: #1A1033;
-      --primary: #6D28D9;
-      --primary-dim: #5B21B6;
-      --light: #C4B5FD;
-      --gold: #C9961F;
-      --green: #22C55E;
-      --text: #FFFFFF;
-      --muted: #A99FC2;
-      --radius: 17px;
+      --bg: #F6F4FB;
+      --surface: #FFFFFF;
+      --ink: #1C1530;
+      --muted: #6B6485;
+      --line: #E9E4F5;
+      --primary: #5B2BD9;
+      --primary-soft: #EEE8FD;
+      --hero-from: #2A1458;
+      --hero-to: #4A1FA8;
+      --gold: #C9A24A;
+      --verified: #1F9D63;
       --nav-h: 64px;
       --safe-b: env(safe-area-inset-bottom, 0px);
     }
@@ -31,285 +32,174 @@
     body {
       font-family: "DM Sans", system-ui, sans-serif;
       background: var(--bg);
-      color: var(--text);
+      color: var(--ink);
       -webkit-tap-highlight-color: transparent;
     }
+    .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
     .phone {
-      max-width: 390px;
-      min-height: 100%;
-      margin: 0 auto;
-      position: relative;
-      padding-bottom: calc(var(--nav-h) + var(--safe-b) + 8px);
-    }
-    @media (min-width: 420px) {
-      body { background: #070510; }
-      .phone { box-shadow: 0 0 0 1px rgba(255,255,255,0.06); min-height: 100vh; }
+      max-width: 390px; min-height: 100%; margin: 0 auto; position: relative;
+      padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
     }
     .hidden { display: none !important; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-    .screen { padding: 16px 16px 8px; }
+    .screen { padding: 20px 20px 8px; }
+    .section { margin-bottom: 24px; }
     .login-wrap {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 32px 24px;
-      max-width: 390px;
-      margin: 0 auto;
+      min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+      padding: 32px 20px; max-width: 390px; margin: 0 auto;
     }
-    .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
-    .logo-mark {
-      width: 48px; height: 48px; border-radius: 14px;
-      background: linear-gradient(135deg, #7C3AED, #4C1D95);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1.6rem;
-    }
-    .logo-text h1 { font-size: 1.35rem; font-weight: 700; }
-    .logo-text p { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
     .login-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 20px;
-      border: 1px solid rgba(196,181,253,0.1);
+      background: var(--surface); border-radius: 16px; padding: 20px;
+      border: 1px solid var(--line);
     }
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
-    input[type=tel] {
-      width: 100%; padding: 14px 16px; border-radius: 12px;
-      border: 1px solid rgba(196,181,253,0.2);
-      background: var(--bg); color: var(--text); font-size: 1rem;
-      font-family: inherit;
+    label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 8px; }
+    input[type=tel], input[type=number] {
+      width: 100%; padding: 14px 16px; border-radius: 14px;
+      border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+      font-size: 1rem; font-family: inherit;
     }
     .btn-primary {
-      width: 100%; margin-top: 16px; padding: 14px;
+      width: 100%; height: 48px; margin-top: 12px;
       background: var(--primary); color: #fff; border-radius: 14px;
       font-weight: 600; font-size: 1rem;
     }
-    .btn-primary:active { background: var(--primary-dim); }
     .btn-secondary {
-      width: 100%; margin-top: 10px; padding: 14px;
-      border: 1px solid var(--primary); color: var(--light);
+      width: 100%; height: 48px; margin-top: 10px;
+      background: var(--primary-soft); color: var(--primary);
       border-radius: 14px; font-weight: 600;
     }
-    .err { color: #f87171; font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
+    .err { color: #dc2626; font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
 
-    .app-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px;
+    .membership {
+      aspect-ratio: 1.586 / 1; border-radius: 20px; padding: 20px;
+      background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
+      color: #fff; position: relative; overflow: hidden; margin-bottom: 24px;
+      box-shadow: 0 12px 40px rgba(42, 20, 88, 0.25);
     }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand-mark {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, #7C3AED, #4C1D95);
-      display: flex; align-items: center; justify-content: center; font-weight: 800;
+    .membership::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(120deg, rgba(255,255,255,0.12) 0%, transparent 45%);
+      pointer-events: none;
     }
-    .brand small { display: block; color: var(--muted); font-size: 0.72rem; }
-    .brand strong { font-size: 0.95rem; }
-    .avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--primary); display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.95rem;
+    .membership.compact { aspect-ratio: auto; padding: 16px 18px; margin-bottom: 20px; }
+    .membership.compact .mem-points { font-size: 1.5rem; }
+    .mem-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+    .mem-brand { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.25rem; }
+    .tier-mark {
+      background: rgba(201, 162, 74, 0.25); color: var(--gold);
+      border: 1px solid rgba(201, 162, 74, 0.5);
+      padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600;
     }
-    .greeting { font-size: 1.15rem; font-weight: 600; margin-bottom: 14px; }
+    .mem-name { margin-top: 28px; font-size: 0.9rem; opacity: 0.9; position: relative; z-index: 1; }
+    .mem-label { font-size: 0.75rem; opacity: 0.75; margin-top: 16px; position: relative; z-index: 1; }
+    .mem-points { font-family: "Sora", sans-serif; font-weight: 700; font-size: 2rem;
+      font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+    .mem-life { font-size: 0.8rem; opacity: 0.8; margin-top: 6px; position: relative; z-index: 1; }
 
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 12px;
-      border: 1px solid rgba(196,181,253,0.08);
+    .panel {
+      background: var(--surface); border-radius: 16px; border: 1px solid var(--line);
+      padding: 16px; margin-bottom: 24px;
     }
-    .card.hero {
-      background: linear-gradient(145deg, #2E1065 0%, #1A1033 55%);
-      border-color: rgba(196,181,253,0.15);
+    .panel h3 { font-family: "Sora", sans-serif; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+    .muted { color: var(--muted); font-size: 0.875rem; line-height: 1.45; }
+    .progress { height: 8px; background: var(--primary-soft); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+    .progress > span { display: block; height: 100%; background: var(--primary); border-radius: 99px; }
+    .score-row { display: flex; gap: 14px; align-items: center; }
+    .score-ring {
+      width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--primary);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .card-label { color: var(--muted); font-size: 0.82rem; }
-    .big-num { font-size: 2rem; font-weight: 700; margin: 4px 0 10px; letter-spacing: -0.02em; }
-    .row-split { display: flex; gap: 12px; }
-    .row-split > div { flex: 1; }
-    .mini-label { font-size: 0.75rem; color: var(--muted); }
-    .mini-val { font-size: 0.95rem; font-weight: 600; margin-top: 2px; }
-    .status-line { font-size: 0.82rem; color: var(--light); margin-bottom: 8px; }
-    .progress {
-      height: 8px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;
-    }
-    .progress > span {
-      display: block; height: 100%; background: var(--primary); border-radius: 99px;
-      transition: width 0.3s ease;
-    }
-    .progress-caption { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+    .score-ring strong { font-family: "Sora", sans-serif; font-size: 1.1rem; }
+    .score-ring em { font-style: normal; font-size: 0.65rem; color: var(--muted); }
 
-    .score-card { display: flex; gap: 14px; align-items: center; }
-    .ring {
-      width: 72px; height: 72px; border-radius: 50%;
-      border: 4px solid var(--primary);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .group-list { background: var(--surface); border-radius: 16px; border: 1px solid var(--line); overflow: hidden; }
+    .group-row {
+      display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center;
+      padding: 14px 16px; border-bottom: 1px solid var(--line); width: 100%; text-align: left;
     }
-    .ring strong { font-size: 1.2rem; line-height: 1; }
-    .ring em { font-style: normal; font-size: 0.65rem; color: var(--muted); }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .chip {
-      font-size: 0.72rem; padding: 6px 10px; border-radius: 99px;
-      background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.35);
-    }
-    .section-title { font-size: 0.95rem; font-weight: 600; margin: 8px 0 10px; }
-    .bill-tiles { display: grid; gap: 10px; }
-    .tile {
-      background: var(--card); border-radius: 14px; padding: 14px;
-      border: 1px solid rgba(196,181,253,0.08);
-    }
-    .tile-top { display: flex; justify-content: space-between; font-weight: 600; }
-    .tile-due { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
-
-    .page-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 4px; }
-    .page-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 16px; }
-    .due-banner .earn { color: var(--light); font-size: 0.88rem; margin-top: 6px; }
-    .payday-row {
-      font-size: 0.82rem; color: var(--muted); margin: 12px 0;
-      padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 12px;
-    }
-    .pay-row {
-      background: var(--card); color: var(--text); border-radius: var(--radius);
-      padding: 14px; margin-bottom: 10px; display: grid;
-      grid-template-columns: 44px 1fr auto; gap: 10px; align-items: start;
-      border: 1px solid rgba(196,181,253,0.08);
-    }
-    .pay-row.paid { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35); }
-    .icon-circle {
-      width: 44px; height: 44px; border-radius: 12px;
+    .group-row:last-child { border-bottom: none; }
+    .icon-wrap {
+      width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft);
       display: flex; align-items: center; justify-content: center;
     }
-    .icon-circle svg { width: 22px; height: 22px; stroke: var(--light); }
-    .pay-row h3 { font-size: 0.95rem; margin-bottom: 2px; }
-    .pay-row .amt { font-weight: 700; font-size: 0.95rem; }
-    .pay-meta { font-size: 0.72rem; color: var(--muted); margin-top: 4px; line-height: 1.35; }
-    .earn-line { font-size: 0.75rem; color: var(--light); margin-top: 6px; font-weight: 600; }
-    .pay-row.paid .earn-line { color: var(--green); }
-    .badge-paid {
-      background: rgba(34,197,94,0.2); color: var(--green); padding: 6px 10px;
-      border-radius: 8px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+    .icon-wrap svg { width: 20px; height: 20px; stroke: var(--primary); fill: none; stroke-width: 2; }
+    .row-title { font-weight: 600; font-size: 0.92rem; }
+    .row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .badge {
+      font-size: 0.72rem; font-weight: 600; padding: 5px 8px; border-radius: 8px; white-space: nowrap;
     }
-    .badge-debit {
-      background: rgba(255,255,255,0.08); color: var(--muted); padding: 6px 10px;
-      border-radius: 8px; font-size: 0.72rem; font-weight: 500; white-space: nowrap;
-    }
-    .bureau-line { font-size: 0.82rem; color: var(--muted); margin: -4px 0 12px; line-height: 1.4; }
-    .score-caption { font-size: 0.72rem; color: var(--muted); margin-top: 8px; line-height: 1.35; }
-    .month-activity { font-size: 0.82rem; color: var(--light); margin-top: 6px; }
-    .btn-pay {
-      background: var(--primary); color: #fff; padding: 8px 14px;
-      border-radius: 10px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;
-    }
-    .btn-pay:disabled { opacity: 0.5; }
-    .redeem-icon svg { width: 24px; height: 24px; stroke: var(--light); }
+    .badge-due { background: var(--primary-soft); color: var(--primary); }
+    .badge-paid { background: rgba(31, 157, 99, 0.12); color: var(--verified); }
+    .badge-debit { background: var(--bg); color: var(--muted); font-weight: 500; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-    .tab {
-      flex: 1; text-align: center; padding: 10px 8px; border-radius: 99px;
-      font-size: 0.82rem; font-weight: 600; color: var(--muted);
-      background: rgba(255,255,255,0.04);
-    }
-    .tab.active { background: var(--primary); color: #fff; }
-    .redeem-item {
-      display: flex; gap: 12px; align-items: center;
-      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-      cursor: pointer;
-    }
-    .redeem-item:last-child { border-bottom: none; }
-    .redeem-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: rgba(109,40,217,0.25); display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem;
-    }
-    .redeem-item h4 { font-size: 0.92rem; margin-bottom: 2px; }
-    .redeem-item p { font-size: 0.78rem; color: var(--muted); }
-    .benefit-line {
-      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-      font-size: 0.88rem; line-height: 1.45;
-    }
-    .timeline { margin-top: 8px; }
-    .timeline h4 { font-size: 0.88rem; margin-bottom: 6px; }
-    .timeline-bar {
-      display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px;
-    }
-    .dot {
-      width: 10px; height: 10px; border-radius: 2px; background: var(--primary);
-    }
-
-    .profile-card { text-align: center; padding: 24px 16px; }
-    .profile-card .avatar { width: 72px; height: 72px; font-size: 1.5rem; margin: 0 auto 12px; }
-    .verified { color: var(--green); font-size: 0.88rem; margin-top: 6px; }
-    .profile-actions { margin-top: 20px; display: grid; gap: 10px; }
-    .profile-actions a, .profile-actions button {
-      display: block; width: 100%; padding: 14px; border-radius: 14px;
-      text-align: center; text-decoration: none; font-weight: 600;
-    }
-    .profile-actions a { background: rgba(196,181,253,0.12); color: var(--light); }
-    .profile-actions .danger { background: rgba(248,113,113,0.15); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
+    .page-title { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.35rem; margin-bottom: 4px; }
+    .page-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+    .pay-banner .big { font-family: "Sora", sans-serif; font-size: 1.5rem; font-weight: 700; margin: 4px 0; }
 
     .nav {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 390px;
-      height: calc(var(--nav-h) + var(--safe-b));
-      padding-bottom: var(--safe-b);
-      background: var(--card); display: flex; align-items: center;
-      border-top: 1px solid rgba(196,181,253,0.12);
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.35);
+      width: 100%; max-width: 390px; height: calc(var(--nav-h) + var(--safe-b));
+      padding-bottom: var(--safe-b); background: var(--surface);
+      border-top: 1px solid var(--line); display: flex; align-items: center;
     }
     .nav button {
       flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
       font-size: 0.68rem; color: var(--muted); padding: 8px 0;
     }
     .nav button.active { color: var(--primary); }
-    .nav svg { width: 22px; height: 22px; }
+    .nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; text-align: center; padding: 10px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); background: var(--surface); border: 1px solid var(--line);
+    }
+    .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .sheet-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-      z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      position: fixed; inset: 0; background: rgba(28, 21, 48, 0.4); z-index: 40;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
     }
     .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
     .sheet {
-      position: fixed; left: 50%; transform: translate(-50%, 100%);
-      bottom: 0; width: 100%; max-width: 390px;
-      background: var(--card); border-radius: 20px 20px 0 0;
-      padding: 20px 16px calc(24px + var(--safe-b));
-      z-index: 50; transition: transform 0.25s ease;
-      border-top: 1px solid rgba(196,181,253,0.15);
+      position: fixed; left: 50%; transform: translate(-50%, 100%); bottom: 0;
+      width: 100%; max-width: 390px; background: var(--surface);
+      border-radius: 20px 20px 0 0; padding: 20px 20px calc(24px + var(--safe-b));
+      z-index: 50; transition: transform 0.25s ease; border-top: 1px solid var(--line);
     }
     .sheet.open { transform: translate(-50%, 0); }
-    .sheet h3 { font-size: 1.1rem; margin-bottom: 12px; }
-    .sheet input[type=number] {
-      width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(196,181,253,0.2);
-      background: var(--bg); color: var(--text); font-size: 1rem; font-family: inherit;
-    }
-    .sheet .computed { margin: 12px 0; color: var(--light); font-weight: 600; }
-    .sheet-actions { display: flex; gap: 10px; }
-    .sheet-actions button { flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; }
-    .sheet-cancel { background: rgba(255,255,255,0.08); color: var(--muted); }
-    .sheet-confirm { background: var(--primary); color: #fff; }
-    .grace-option {
-      width: 100%; text-align: left; padding: 14px; margin-bottom: 8px;
-      background: var(--bg); border-radius: 12px; border: 1px solid rgba(196,181,253,0.15);
-    }
+    .sheet h3 { font-family: "Sora", sans-serif; font-weight: 600; font-size: 1.1rem; margin-bottom: 12px; }
+    .sheet-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .sheet-actions .btn-primary { margin-top: 0; }
     .toast {
       position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      background: #1e293b; color: #fff; padding: 10px 16px; border-radius: 10px;
+      background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
       font-size: 0.85rem; z-index: 60; opacity: 0; transition: opacity 0.2s;
-      max-width: 340px; text-align: center;
     }
     .toast.show { opacity: 1; }
     .busy { pointer-events: none; opacity: 0.85; }
+    .benefit-line { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+    .benefit-line:last-child { border-bottom: none; }
+    .timeline h4 { font-size: 0.88rem; margin-bottom: 8px; font-weight: 600; }
+    .timeline-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+    .dot { width: 10px; height: 10px; border-radius: 2px; background: var(--primary); }
+    .profile-actions { margin-top: 20px; display: grid; gap: 10px; }
+    .profile-actions a, .profile-actions button {
+      display: block; width: 100%; height: 48px; line-height: 48px; border-radius: 14px;
+      text-align: center; text-decoration: none; font-weight: 600;
+    }
+    .profile-actions a { background: var(--primary-soft); color: var(--primary); }
+    .profile-actions .danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; height: auto; line-height: 1.4; padding: 14px; }
+    .demo-note { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 16px; }
+    @media (prefers-reduced-motion: reduce) {
+      .mem-points { transition: none !important; }
+    }
   </style>
 </head>
 <body>
   <div id="loginView" class="login-wrap">
-    <div class="logo-row">
-      <div class="logo-mark">W</div>
-      <div class="logo-text">
-        <h1>Woza</h1>
-        <p>Pay today. Get more tomorrow.</p>
-      </div>
-    </div>
+    <h1 class="page-title" style="margin-bottom:8px">Woza</h1>
+    <p class="muted" style="margin-bottom:24px">Pay today. Get more tomorrow.</p>
     <div class="login-card">
       <label for="phone">Mobile number</label>
       <input id="phone" type="tel" placeholder="072 418 3390" autocomplete="tel" />
@@ -324,47 +214,39 @@
     <div id="screenPayments" class="screen hidden"></div>
     <div id="screenRewards" class="screen hidden"></div>
     <div id="screenProfile" class="screen hidden"></div>
-
     <nav class="nav" id="tabNav">
-      <button type="button" data-tab="home" class="active">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>
-        Home
-      </button>
-      <button type="button" data-tab="payments">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-        Payments
-      </button>
-      <button type="button" data-tab="rewards">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>
-        Rewards
-      </button>
-      <button type="button" data-tab="profile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/></svg>
-        Profile
-      </button>
+      <button type="button" data-tab="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>Home</button>
+      <button type="button" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
+      <button type="button" data-tab="rewards"><svg viewBox="0 0 24 24"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>Rewards</button>
+      <button type="button" data-tab="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/></svg>Profile</button>
     </nav>
   </div>
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" id="sheet">
-    <div id="sheetBody"></div>
-  </div>
+  <div class="sheet" id="sheet"><div id="sheetBody"></div></div>
   <div class="toast" id="toast"></div>
 
   <script>
-    const ICON_SVG = {
-      rent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 01-1 1h-5v-5H10v5H5a1 1 0 01-1-1v-8.5z"/></svg>',
-      utilities: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z"/></svg>',
-      car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16l1-4h12l1 4M6 16v2M18 16v2M4 12l2-5h12l2 5"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg>',
-      ebucks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/></svg>',
-      airtime: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
-      cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>',
+    const IC = {
+      home: '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>',
+      rent: '<svg viewBox="0 0 24 24"><path d="M4 10.5L12 3l8 6.5V19a1 1 0 01-1 1h-5v-5H10v5H5a1 1 0 01-1-1v-8.5z"/></svg>',
+      utilities: '<svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z"/></svg>',
+      car: '<svg viewBox="0 0 24 24"><path d="M5 16l1-4h12l1 4M6 16v2M18 16v2M4 12l2-5h12l2 5"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg>',
+      gift: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M12 8a3 3 0 100-6c1.5 0 2.5 1.5 3 2.5.5-1 1.5-2.5 3-2.5a3 3 0 010 6"/></svg>',
+      smartphone: '<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+      landmark: '<svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V10l6-4 6 4v11"/><path d="M10 21v-6h4v6"/></svg>',
+      star: '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6L12 2z"/></svg>',
     };
-    const ICON_BG = { rent: "#6D28D9", utilities: "#8B5CF6", car: "#BE185D" };
+    const REDEEM_IC = { rent: "rent", ebucks: "gift", airtime: "smartphone", cash: "landmark" };
+    const RATES = { rent: 1.5, ebucks: 1, airtime: 1, cash: 0.5 };
+
     let state = null;
     let busy = false;
     let rewardsTab = "redeem";
-    let redeemOption = null;
+    let displayPoints = 0;
+    let scrollBillId = null;
+
+    function fmtPts(n) { return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
 
     function toast(msg) {
       const el = document.getElementById("toast");
@@ -379,31 +261,50 @@
         headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
         ...opts,
       });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || res.statusText);
-      }
+      if (!res.ok) throw new Error(await res.text() || res.statusText);
       return res.json();
     }
 
-    async function login(phone) {
-      await api("/api/login", { method: "POST", body: JSON.stringify({ phone }) });
-      await refresh();
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("appView").classList.remove("hidden");
+    function membershipCard(u, compact) {
+      const pts = displayPoints || u.available_points;
+      return `
+        <div class="membership ${compact ? "compact" : ""}" id="membershipCard">
+          <div class="mem-top">
+            <div class="mem-brand">Woza</div>
+            <span class="tier-mark">${u.status}</span>
+          </div>
+          <div class="mem-name">${u.name}</div>
+          <div class="mem-label">Available points</div>
+          <div class="mem-points font-num" id="memPoints">${fmtPts(pts)}</div>
+          <div class="mem-life">Lifetime ${u.lifetime_display.replace(" pts", "")} pts</div>
+        </div>`;
     }
 
-    async function refresh() {
-      state = await api("/api/me");
-      renderAll();
+    function animatePoints(from, to) {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        displayPoints = to;
+        const el = document.getElementById("memPoints");
+        if (el) el.textContent = fmtPts(to);
+        return;
+      }
+      const el = document.getElementById("memPoints");
+      if (!el) { displayPoints = to; return; }
+      const start = performance.now();
+      const dur = 700;
+      function frame(t) {
+        const p = Math.min(1, (t - start) / dur);
+        const v = Math.round(from + (to - from) * p);
+        el.textContent = fmtPts(v);
+        if (p < 1) requestAnimationFrame(frame);
+        else displayPoints = to;
+      }
+      requestAnimationFrame(frame);
     }
 
-    function fmtPts(n) {
-      return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " pts";
-    }
-
-    function verificationLabel(v) {
-      return v === "bank_feed" ? "Verified: Debit order read" : "Verified: Paid through Woza";
+    function badgeClass(b) {
+      if (b.is_bank_debit) return "badge-debit";
+      if (b.paid) return "badge-paid";
+      return "badge-due";
     }
 
     function renderHome() {
@@ -413,124 +314,102 @@
       const pct = tp.progress_den ? Math.min(100, (tp.progress_num / tp.progress_den) * 100) : 100;
       const bills = state.payments.bills;
       document.getElementById("screenHome").innerHTML = `
-        <header class="app-header">
-          <div class="brand">
-            <div class="brand-mark">W</div>
-            <div><strong>Woza</strong><small>Pay today. Get more tomorrow.</small></div>
-          </div>
-          <div class="avatar">${u.name.charAt(0)}</div>
-        </header>
-        <p class="greeting">${h.greeting}</p>
-        <div class="card hero">
-          <div class="card-label">Available points</div>
-          <div class="big-num">${u.available_display.replace(" pts", "")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
-          <div class="row-split">
-            <div><div class="mini-label">Lifetime Points</div><div class="mini-val">${u.lifetime_display.replace(" pts","")}</div></div>
-            <div><div class="mini-label">Tier Status</div><div class="mini-val">${u.status}</div></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="status-line">${h.status_line}</div>
+        ${membershipCard(u, false)}
+        <div class="section panel">
+          <p class="muted">${h.status_line}</p>
           <div class="progress"><span style="width:${pct}%"></span></div>
-          <div class="progress-caption">${h.progress_label}</div>
+          <p class="muted" style="margin-top:8px;font-size:0.8rem">${h.progress_label}</p>
         </div>
-        <p class="bureau-line">${h.bureau_line}</p>
-        <div class="card score-card">
-          <div class="ring"><strong>${u.score}</strong><em>${u.score_label}</em></div>
+        <div class="section panel score-row">
+          <div class="score-ring"><strong class="font-num">742</strong><em>${u.score_label}</em></div>
           <div>
-            <div class="card-label">Woza Score</div>
-            <p style="font-size:0.85rem;color:var(--muted);margin-top:4px">On-time payments build your score</p>
-            <div class="chips">${h.bills_on_track.map(b => `<span class="chip">${b} · On track</span>`).join("")}</div>
-            <p class="score-caption">${u.score_caption}</p>
+            <h3>Woza score</h3>
+            <p class="muted">${u.score_caption}</p>
           </div>
         </div>
-        <p class="section-title">This month</p>
-        <div class="bill-tiles">
-          ${h.month_activity.map(a => `
-            <div class="tile">
-              <div class="tile-top"><span>${a.name}</span></div>
-              <div class="month-activity">${a.line}</div>
-            </div>`).join("")}
-        </div>
-        <p class="section-title">Your Bills</p>
-        <div class="bill-tiles">
+        <p class="muted section" style="margin-top:-8px">${h.bureau_line}</p>
+        <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Your bills</h3>
+        <div class="group-list section">
           ${bills.map(b => `
-            <div class="tile">
-              <div class="tile-top"><span>${b.name}</span><span>${b.amount_display}</span></div>
-              <div class="tile-due">Due ${state.meta.due_display}</div>
-            </div>`).join("")}
+            <button type="button" class="group-row" data-goto="${b.id}">
+              <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
+              <span>
+                <div class="row-title">${b.name}</div>
+                <div class="row-sub">${b.amount_display}</div>
+              </span>
+              <span class="badge ${badgeClass(b)}">${b.home_badge}</span>
+            </button>`).join("")}
         </div>`;
+      document.querySelectorAll("#screenHome [data-goto]").forEach(btn => {
+        btn.onclick = () => {
+          scrollBillId = +btn.dataset.goto;
+          showTab("payments");
+          setTimeout(() => {
+            const el = document.getElementById("bill-" + scrollBillId);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 80);
+        };
+      });
     }
 
     function renderPayments() {
       const p = state.payments;
       document.getElementById("screenPayments").innerHTML = `
-        <h2 class="page-title">Make a Payment</h2>
+        <h2 class="page-title">Payments</h2>
         <p class="page-sub">Earn points on the essentials.</p>
-        <div class="card due-banner">
-          <div class="card-label">Paid through Woza this month</div>
-          <div class="big-num" style="font-size:1.6rem">${p.paid_through_woza_display}</div>
-          <div class="earn">${p.car_debit_subline}</div>
+        <div class="panel pay-banner section">
+          <p class="muted">Paid through Woza this month</p>
+          <p class="big font-num">${p.paid_through_woza_display}</p>
+          <p class="muted">${p.car_debit_subline}</p>
         </div>
-        <div class="payday-row">${p.grace_info}</div>
-        ${p.bills.map(b => paymentRow(b)).join("")}
-        ${p.payable_outstanding ? `<button type="button" class="btn-primary" id="payAllBtn" style="margin:12px 0 8px">Pay all bills</button>` : ""}`;
+        <p class="muted section" style="margin-top:-12px">${p.grace_info}</p>
+        <div class="group-list section">
+          ${p.bills.map(b => paymentRow(b)).join("")}
+        </div>
+        ${p.payable_outstanding ? `<button type="button" class="btn-primary section" id="payAllBtn">Pay all through Woza</button>` : ""}`;
       if (p.payable_outstanding) {
-        document.getElementById("payAllBtn").onclick = () => actionPayAll();
+        document.getElementById("payAllBtn").onclick = () => openPayAllSheet();
       }
       p.bills.forEach(b => {
         const btn = document.getElementById("pay-" + b.id);
-        if (btn) btn.onclick = () => actionPay(b.id);
+        if (btn) btn.onclick = () => openPaySheet(b);
       });
     }
 
     function paymentRow(b) {
-      const cls = b.paid ? "paid" : "";
-      const verify = verificationLabel(b.verification);
-      let right = "";
+      let action = "";
       if (b.is_bank_debit) {
-        right = `<span class="badge-debit">Bank debit order</span>`;
+        action = `<span class="badge badge-debit">Bank debit order, 1 Nov</span>`;
       } else if (b.paid) {
-        right = `<span class="badge-paid">Paid ✓</span>`;
+        action = `<span class="badge badge-paid">Paid ✓</span>`;
       } else {
-        right = `<button type="button" class="btn-pay" id="pay-${b.id}">Pay</button>`;
+        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 14px;font-size:0.82rem" id="pay-${b.id}">Pay</button>`;
       }
-      const earn = b.month_line;
       return `
-        <div class="pay-row ${cls}">
-          <div class="icon-circle" style="background:${ICON_BG[b.category] || "#6D28D9"}33">${ICON_SVG[b.category] || ""}</div>
-          <div>
-            <h3>${b.name}</h3>
-            <div class="amt">${b.amount_display}</div>
-            <div class="pay-meta">${verify}<br/>Due ${state.meta.due_display}</div>
-            <div class="earn-line">${earn}</div>
-          </div>
-          <div>${right}</div>
+        <div class="group-row" id="bill-${b.id}" style="grid-template-columns:40px 1fr auto;border-bottom:1px solid var(--line)">
+          <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
+          <span>
+            <div class="row-title">${b.name}</div>
+            <div class="row-sub">${b.amount_display} · ${b.month_line}</div>
+          </span>
+          ${action}
         </div>`;
     }
 
     function renderRewards() {
       const u = state.user;
-      const r = state.rewards;
       document.getElementById("screenRewards").innerHTML = `
-        <h2 class="page-title">Your Rewards</h2>
-        <div class="card hero">
-          <div class="card-label">Available points</div>
-          <div class="big-num">${u.available_display.replace(" pts","")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
-          <div class="row-split">
-            <div><div class="mini-label">Tier Status</div><div class="mini-val">${u.status}</div></div>
-            <div><div class="mini-label">Lifetime Points</div><div class="mini-val">${u.lifetime_display.replace(" pts","")}</div></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-label">Woza Cash</div>
-          <div class="big-num" style="font-size:1.4rem">${u.woza_cash_display}</div>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:6px">${u.woza_cash_subline}</p>
+        <h2 class="page-title">Rewards</h2>
+        ${membershipCard(u, true)}
+        <div class="panel section">
+          <p class="muted">Woza cash</p>
+          <p class="font-num" style="font-size:1.4rem">${u.woza_cash_display}</p>
+          <p class="muted" style="margin-top:6px">${u.woza_cash_subline}</p>
         </div>
         <div class="tabs">
           <button type="button" class="tab ${rewardsTab==="redeem"?"active":""}" data-rtab="redeem">Redeem</button>
           <button type="button" class="tab ${rewardsTab==="benefits"?"active":""}" data-rtab="benefits">Benefits</button>
-          <button type="button" class="tab ${rewardsTab==="progress"?"active":""}" data-rtab="progress">Your Progress</button>
+          <button type="button" class="tab ${rewardsTab==="progress"?"active":""}" data-rtab="progress">Your progress</button>
         </div>
         <div id="rewardsPanel"></div>`;
       document.querySelectorAll("[data-rtab]").forEach(btn => {
@@ -544,29 +423,38 @@
       const panel = document.getElementById("rewardsPanel");
       if (!panel) return;
       if (rewardsTab === "redeem") {
-        panel.innerHTML = `<div class="card">${r.redemption_options.map(o => `
-          <div class="redeem-item" data-opt="${o.id}">
-            <div class="redeem-icon">${ICON_SVG[o.id] || ICON_SVG.rent}</div>
-            <div>
-              <h4>${o.title}</h4>
-              <p>${o.rate} · ${o.example}</p>
-              <p style="margin-top:4px;color:var(--light);font-size:0.78rem">${o.your_value_line}</p>
-            </div>
-          </div>`).join("")}</div>`;
-        panel.querySelectorAll(".redeem-item").forEach(el => {
+        panel.innerHTML = `<div class="group-list">${r.redemption_options.map(o => `
+          <button type="button" class="group-row" data-opt="${o.id}" style="border-bottom:1px solid var(--line)">
+            <span class="icon-wrap">${IC[REDEEM_IC[o.id]] || IC.gift}</span>
+            <span style="grid-column:span 2">
+              <div class="row-title">${o.title}</div>
+              <div class="row-sub">${o.rate} · ${o.example}</div>
+              <div class="row-sub" style="color:var(--primary);margin-top:4px">${o.your_value_line}</div>
+            </span>
+          </button>`).join("")}</div>`;
+        panel.querySelectorAll("[data-opt]").forEach(el => {
           el.onclick = () => openRedeemSheet(el.dataset.opt);
         });
       } else if (rewardsTab === "benefits") {
         const b = r.benefits;
-        panel.innerHTML = `<div class="card">
-          <div class="benefit-line"><strong>${b.grace_months} grace months</strong> available when life happens.</div>
-          <div class="benefit-line"><strong>${b.tier} rate</strong> at partner lenders.</div>
-          <div class="benefit-line">Your record at the bureau: Rent ${b.bureau.rent_months} months reported, Utilities ${b.bureau.utilities_months}, ${b.bureau.car_note}.</div>
-        </div>`;
+        panel.innerHTML = `
+          <div class="panel">
+            <h3>Your Gold tier</h3>
+            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+          </div>
+          <div class="panel" style="margin-top:16px">
+            <h3>Unlock with Black</h3>
+            ${b.black_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+          </div>`;
       } else {
-        panel.innerHTML = `<div class="card timeline">${r.progress.map(p => `
-          <h4>${p.bill_name} · ${p.months_on_time} months on time</h4>
-          <div class="timeline-bar">${p.periods.map(() => `<span class="dot"></span>`).join("")}</div>`).join("")}</div>`;
+        const b = r.benefits;
+        panel.innerHTML = `
+          <div class="panel timeline">
+            <p class="muted" style="margin-bottom:12px">Grace months: ${b.grace_months_earned} earned, ${b.grace_months_used} used · ${b.grace_months} available</p>
+            ${r.progress.map(p => `
+              <h4>${p.bill_name} · ${p.months_on_time} months on time</h4>
+              <div class="timeline-bar">${p.periods.map(() => `<span class="dot"></span>`).join("")}</div>`).join("")}
+          </div>`;
       }
     }
 
@@ -574,20 +462,23 @@
       const u = state.user;
       document.getElementById("screenProfile").innerHTML = `
         <h2 class="page-title">Profile</h2>
-        <div class="card profile-card">
-          <div class="avatar">${u.name.charAt(0)}</div>
-          <h3>${u.name}</h3>
-          <p style="color:var(--muted);margin-top:6px">${u.phone}</p>
-          <p class="verified">Verified member since ${u.member_since}</p>
+        <div class="panel" style="text-align:center;padding:24px">
+          <div class="icon-wrap" style="width:72px;height:72px;margin:0 auto 12px;border-radius:50%">${IC.star}</div>
+          <h3 style="font-family:Sora,sans-serif">${u.name}</h3>
+          <p class="muted" style="margin-top:6px">${u.phone}</p>
+          <p style="color:var(--verified);margin-top:8px;font-size:0.88rem">Verified member since ${u.member_since}</p>
           <div class="profile-actions">
             <a href="/lender">Lender view (demo bureau)</a>
             <button type="button" class="danger" id="resetBtn">Reset demo</button>
           </div>
+          <p class="demo-note">Demo mode. No real money moves.</p>
         </div>`;
-      document.getElementById("resetBtn").onclick = actionReset;
+      document.getElementById("resetBtn").onclick = openResetSheet;
     }
 
     function renderAll() {
+      if (!state) return;
+      displayPoints = state.user.available_points;
       renderHome();
       renderPayments();
       renderRewards();
@@ -596,90 +487,133 @@
 
     function showTab(name) {
       ["Home","Payments","Rewards","Profile"].forEach((s, i) => {
-        const key = ["home","payments","rewards","profile"][i];
-        document.getElementById("screen" + s).classList.toggle("hidden", key !== name);
+        document.getElementById("screen" + s).classList.toggle("hidden", ["home","payments","rewards","profile"][i] !== name);
       });
-      document.querySelectorAll("#tabNav button").forEach(b => {
-        b.classList.toggle("active", b.dataset.tab === name);
-      });
+      document.querySelectorAll("#tabNav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    }
+
+    function openSheet(html) {
+      document.getElementById("sheetBody").innerHTML = html;
+      document.getElementById("sheet").classList.add("open");
+      document.getElementById("sheetBackdrop").classList.add("open");
+    }
+    function closeSheet() {
+      document.getElementById("sheet").classList.remove("open");
+      document.getElementById("sheetBackdrop").classList.remove("open");
     }
 
     async function withBusy(fn) {
       if (busy) return;
       busy = true;
       document.getElementById("appView").classList.add("busy");
-      try {
-        await fn();
-      } catch (e) {
-        toast(e.message || "Something went wrong");
-      } finally {
-        busy = false;
-        document.getElementById("appView").classList.remove("busy");
-      }
+      try { await fn(); } catch (e) { toast(e.message || "Something went wrong"); }
+      finally { busy = false; document.getElementById("appView").classList.remove("busy"); }
     }
 
-    function actionPay(id) {
-      withBusy(async () => {
-        state = await api("/api/pay", { method: "POST", body: JSON.stringify({ bill_id: id }) });
+    function openPaySheet(bill) {
+      openSheet(`
+        <h3>${bill.pay_sheet_title}</h3>
+        <p class="muted">1 point per rand on time · ${bill.potential_display}</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmPay">Confirm</button>
+          <button type="button" class="btn-secondary" id="cancelPay">Cancel</button>
+        </div>`);
+      document.getElementById("cancelPay").onclick = closeSheet;
+      document.getElementById("confirmPay").onclick = () => withBusy(async () => {
+        const prev = state.user.available_points;
+        const data = await api("/api/pay", { method: "POST", body: JSON.stringify({ bill_id: bill.id }) });
+        closeSheet();
+        state = data;
         renderAll();
-        toast("Payment recorded");
+        animatePoints(prev, state.user.available_points);
+        const pts = data.event?.points_added || 0;
+        openSheet(`
+          <h3>Paid</h3>
+          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">+${fmtPts(pts)} points</p>
+          <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
+        document.getElementById("donePay").onclick = closeSheet;
       });
     }
 
-    function actionPayAll() {
-      withBusy(async () => {
+    function openPayAllSheet() {
+      openSheet(`
+        <h3>Pay all through Woza</h3>
+        <p class="muted">Rent and utilities for 1 Nov 2026</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmAll">Confirm</button>
+          <button type="button" class="btn-secondary" id="cancelAll">Cancel</button>
+        </div>`);
+      document.getElementById("cancelAll").onclick = closeSheet;
+      document.getElementById("confirmAll").onclick = () => withBusy(async () => {
+        const prev = state.user.available_points;
         state = await api("/api/pay_all", { method: "POST", body: JSON.stringify({}) });
+        closeSheet();
         renderAll();
-        toast("All bills paid");
+        animatePoints(prev, state.user.available_points);
+        toast("All Woza bills paid");
       });
     }
 
-    function actionReset() {
-      withBusy(async () => {
+    function openRedeemSheet(opt) {
+      const o = state.rewards.redemption_options.find(x => x.id === opt);
+      const pts = state.user.available_points;
+      openSheet(`
+        <h3>${o.title}</h3>
+        <p class="muted">${o.your_value_line}</p>
+        <label class="muted" for="ptsIn" style="margin-top:12px">Points to redeem</label>
+        <input type="number" id="ptsIn" min="1000" step="1000" value="${pts}" style="margin-top:8px" />
+        <p class="muted" id="valOut" style="margin-top:10px"></p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmRedeem">Confirm</button>
+          <button type="button" class="btn-secondary" id="cancelRedeem">Cancel</button>
+        </div>`);
+      const upd = () => {
+        const n = +document.getElementById("ptsIn").value || 0;
+        const cents = Math.floor(n * RATES[opt]);
+        document.getElementById("valOut").textContent = `Value: R${(cents/100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, " ")}`;
+      };
+      document.getElementById("ptsIn").oninput = upd;
+      upd();
+      document.getElementById("cancelRedeem").onclick = closeSheet;
+      document.getElementById("confirmRedeem").onclick = () => withBusy(async () => {
+        const points = +document.getElementById("ptsIn").value;
+        const prev = state.user.available_points;
+        const data = await api("/api/redeem", { method: "POST", body: JSON.stringify({ option: opt, points }) });
+        closeSheet();
+        state = data;
+        renderAll();
+        animatePoints(prev, state.user.available_points);
+        let msg = `${data.event.value_display} redeemed`;
+        if (opt === "rent") msg = `${data.event.value_display} will come off your 1 Nov rent`;
+        openSheet(`<h3>Redeemed</h3><p class="muted">${msg}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
+        document.getElementById("doneR").onclick = closeSheet;
+      });
+    }
+
+    function openResetSheet() {
+      openSheet(`
+        <h3>Reset demo?</h3>
+        <p class="muted">Restores Thandi's starting balances and due bills.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmReset">Reset demo</button>
+          <button type="button" class="btn-secondary" id="cancelReset">Cancel</button>
+        </div>`);
+      document.getElementById("cancelReset").onclick = closeSheet;
+      document.getElementById("confirmReset").onclick = () => withBusy(async () => {
         state = await api("/api/reset", { method: "POST", body: JSON.stringify({}) });
         rewardsTab = "redeem";
+        closeSheet();
         renderAll();
         toast("Demo reset");
       });
     }
 
-    function closeSheet() {
-      document.getElementById("sheet").classList.remove("open");
-      document.getElementById("sheetBackdrop").classList.remove("open");
-    }
-
-    const RATES = { rent: 1.5, ebucks: 1, airtime: 1, cash: 0.5 };
-
-    function openRedeemSheet(opt) {
-      redeemOption = opt;
-      const title = state.rewards.redemption_options.find(o => o.id === opt)?.title || opt;
-      document.getElementById("sheetBody").innerHTML = `
-        <h3>${title}</h3>
-        <label class="card-label" for="ptsIn">Points to redeem</label>
-        <input type="number" id="ptsIn" min="1000" step="1000" value="${state.user.available_points}" />
-        <div class="computed" id="valOut"></div>
-        <div class="sheet-actions">
-          <button type="button" class="sheet-cancel" id="redeemCancel">Cancel</button>
-          <button type="button" class="sheet-confirm" id="redeemConfirm">Confirm</button>
-        </div>`;
-      const upd = () => {
-        const pts = +document.getElementById("ptsIn").value || 0;
-        const cents = Math.floor(pts * RATES[opt]);
-        const rands = (cents / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        document.getElementById("valOut").textContent = `Value: R${rands}`;
-      };
-      document.getElementById("ptsIn").oninput = upd;
-      upd();
-      document.getElementById("sheet").classList.add("open");
-      document.getElementById("sheetBackdrop").classList.add("open");
-      document.getElementById("redeemCancel").onclick = closeSheet;
-      document.getElementById("redeemConfirm").onclick = () => withBusy(async () => {
-        const points = +document.getElementById("ptsIn").value;
-        state = await api("/api/redeem", { method: "POST", body: JSON.stringify({ option: opt, points }) });
-        closeSheet();
-        renderAll();
-        toast("Redemption confirmed");
-      });
+    async function login(phone) {
+      await api("/api/login", { method: "POST", body: JSON.stringify({ phone }) });
+      state = await api("/api/me");
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("appView").classList.remove("hidden");
+      renderAll();
     }
 
     document.getElementById("sheetBackdrop").onclick = closeSheet;
@@ -687,19 +621,13 @@
       const btn = e.target.closest("button[data-tab]");
       if (btn) showTab(btn.dataset.tab);
     });
-
     document.getElementById("loginBtn").onclick = () => withBusy(async () => {
-      const phone = document.getElementById("phone").value.trim() || "072 418 3390";
       document.getElementById("loginErr").textContent = "";
-      try {
-        await login(phone);
-      } catch (e) {
-        document.getElementById("loginErr").textContent = "Login failed";
-      }
+      try { await login(document.getElementById("phone").value.trim() || "072 418 3390"); }
+      catch { document.getElementById("loginErr").textContent = "Login failed"; }
     });
     document.getElementById("demoBtn").onclick = () => withBusy(async () => {
       document.getElementById("phone").value = "072 418 3390";
-      document.getElementById("loginErr").textContent = "";
       await login("072 418 3390");
     });
 
@@ -709,14 +637,9 @@
         document.getElementById("loginView").classList.add("hidden");
         document.getElementById("appView").classList.remove("hidden");
         renderAll();
-      } catch {
-        /* show login */
-      }
+      } catch { /* login */ }
     }
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/static/sw.js").catch(() => {});
-    }
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/static/sw.js").catch(() => {});
     boot();
   </script>
 </body>

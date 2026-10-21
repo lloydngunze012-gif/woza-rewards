@@ -4,8 +4,8 @@
   "description": "Pay today. Get more tomorrow.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0E0A1F",
-  "theme_color": "#6D28D9",
+  "background_color": "#F6F4FB",
+  "theme_color": "#5B2BD9",
   "icons": [
     {
       "src": "/static/icon.svg",

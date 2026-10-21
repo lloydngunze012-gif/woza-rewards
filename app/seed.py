@@ -8,7 +8,7 @@ from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
 CURRENT_PERIOD = "2026-11"
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
-DEMO_VERSION = 2
+DEMO_VERSION = 3
 
 AVAILABLE_POINTS = 12_000
 LIFETIME_POINTS = 331_200
@@ -47,7 +47,6 @@ def seed_if_empty(db: Session) -> None:
         db.commit()
         return
     if user.demo_version != DEMO_VERSION:
-        db.close()
         drop_and_reseed()
 
 
@@ -146,19 +145,6 @@ def _seed(db: Session) -> None:
                     points_awarded=spec["points_per_month"],
                 )
             )
-
-    paid_at = datetime(2026, 10, 28, 11, 0, 0)
-    for category, pts in (("rent", 4_500), ("utilities", 1_500)):
-        db.add(
-            Payment(
-                bill_id=bill_ids[category],
-                period=CURRENT_PERIOD,
-                paid_at=paid_at,
-                on_time=True,
-                verified_by="through_woza",
-                points_awarded=pts,
-            )
-        )
 
     db.add(
         GraceUse(
