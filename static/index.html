@@ -473,12 +473,9 @@
     function paymentRow(b) {
       const cls = b.paid ? "paid" : b.grace_used ? "grace" : "";
       const verify = verificationLabel(b.verification);
-      let right = b.is_auto
-        ? `<span class="badge-auto">Auto</span>`
+      const right = b.is_auto
+        ? `<span class="badge-auto">${b.paid ? "Paid" : "Auto"}</span>`
         : `<button type="button" class="btn-pay" id="pay-${b.id}" ${b.paid || b.grace_used ? "disabled" : ""}>Pay</button>`;
-      if (b.is_auto && !b.paid && !b.grace_used) {
-        right = `<button type="button" class="btn-pay" id="pay-${b.id}">Sync</button>`;
-      }
       const earn = b.paid ? b.status_line : `Earns ${fmtPts(b.potential_points)}`;
       return `
         <div class="pay-row ${cls}">
