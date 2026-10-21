@@ -303,8 +303,9 @@ def build_me_payload(user: User, db: Session) -> dict:
             }
         )
 
-    months_to_black = tier["months_needed"] if tier["next"] == "Black" else 0
-    black_progress_label = f"{user.months_on_time} of 48 on-time months"
+    months_to_gold = max(0, 24 - user.months_on_time) if user.months_on_time < 24 else 0
+    gold_progress_label = f"{user.months_on_time} of 24 on-time months"
+    gold_progress_pct = min(100, int(user.months_on_time / 24 * 100)) if user.months_on_time < 24 else 100
 
     return {
         "user": {
@@ -344,10 +345,10 @@ def build_me_payload(user: User, db: Session) -> dict:
         },
         "home": {
             "greeting": f"Good morning, {user.name.split()[0]}",
-            "months_to_black_line": f"{months_to_black} months to Black",
-            "black_progress_label": black_progress_label,
-            "black_progress_pct": min(100, int(user.months_on_time / 48 * 100)),
-            "bureau_line": f"{user.months_on_time} on-time months shared with the credit bureau",
+            "months_to_gold_line": f"{months_to_gold} months to Gold",
+            "gold_progress_label": gold_progress_label,
+            "gold_progress_pct": gold_progress_pct,
+            "bureau_line": "36 on-time months shared with the credit bureau",
             "bills_on_track": ["Rent", "Utilities", "Car finance"],
         },
         "payments": {
@@ -376,15 +377,15 @@ def build_me_payload(user: User, db: Session) -> dict:
                 "grace_months_earned": user.grace_months_earned,
                 "grace_months_used": grace_used,
                 "tier": status,
-                "gold_unlocks": [
+                "silver_unlocks": [
                     "2 grace months available (3 earned, 1 used)",
-                    "Gold rate at partner lenders",
+                    "Silver rate at partner lenders",
                     "Rent and utilities reported to the bureau",
                 ],
-                "black_unlocks": [
-                    "48 on-time months for Black tier",
-                    "Highest partner lender rates",
-                    "Priority support and exclusive offers",
+                "gold_unlocks": [
+                    "24 on-time months for Gold tier",
+                    "Better partner lender rates",
+                    "Higher redemption value on rent",
                 ],
                 "bureau": {
                     "rent_months": 36,
@@ -402,7 +403,7 @@ def bureau_summary(user: User, db: Session) -> dict:
     bills = db.query(Bill).filter(Bill.user_id == user.id).all()
     monthly = sum(b.amount_cents for b in bills)
     return {
-        "on_time_months": user.months_on_time,
+        "on_time_months": 36,
         "bill_count": len(bills),
         "monthly_display": fmt_rand(monthly),
         "status": status_for_months(user.months_on_time),

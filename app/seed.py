@@ -8,7 +8,7 @@ from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
 CURRENT_PERIOD = "2026-11"
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
-DEMO_VERSION = 3
+DEMO_VERSION = 5
 
 AVAILABLE_POINTS = 12_000
 LIFETIME_POINTS = 331_200
@@ -54,8 +54,8 @@ def _seed(db: Session) -> None:
     user = User(
         name="Thandi Mokoena",
         phone="072 418 3390",
-        status="Gold",
-        months_on_time=36,
+        status="Silver",
+        months_on_time=12,
         score=742,
         points=AVAILABLE_POINTS,
         lifetime_points=LIFETIME_POINTS,
@@ -64,6 +64,7 @@ def _seed(db: Session) -> None:
         grace_months=2,
         grace_months_earned=3,
         demo_version=DEMO_VERSION,
+        bank_consent_active=True,
     )
     db.add(user)
     db.flush()
@@ -102,7 +103,7 @@ def _seed(db: Session) -> None:
             "history_months": 30,
         },
         {
-            "name": "Car Payments",
+            "name": "Car finance",
             "category": "car",
             "amount_cents": 320_000,
             "payee": "[VEHICLE LENDER]",

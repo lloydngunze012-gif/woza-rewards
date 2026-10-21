@@ -132,8 +132,13 @@ def main() -> int:
 
         def pay_success() -> None:
             open_pay_sheet()
-            js_click(page, "confirmPay")
-            page.wait_for_selector("text=Paid", timeout=15_000)
+            with page.expect_response(lambda r: "/api/pay" in r.url and r.request.method == "POST"):
+                js_click(page, "confirmPay")
+            page.wait_for_function(
+                "() => document.querySelector('#sheetBody h3')?.textContent === 'Paid'",
+                timeout=15_000,
+            )
+            page.wait_for_timeout(400)
 
         run_step(results, "05_pay_success", page, "05_pay_success", pay_success, full_page=False)
 
@@ -176,7 +181,7 @@ def main() -> int:
                 js_click(page, "doneR")
                 page.wait_for_timeout(200)
             page.click('#screenRewards button[data-rtab="benefits"]')
-            page.wait_for_selector("text=Your Gold tier", timeout=10_000)
+            page.wait_for_selector("text=Your Silver tier", timeout=10_000)
 
         run_step(results, "10_rewards_benefits_tab", page, "10_rewards_benefits_tab", benefits_tab)
 
@@ -191,7 +196,7 @@ def main() -> int:
             close_sheets(page)
             page.click('nav#tabNav button[data-tab="profile"]')
             page.wait_for_selector("#screenProfile:not(.hidden)", timeout=10_000)
-            page.wait_for_selector("text=Verified member since Oct 2023", timeout=10_000)
+            page.locator("#linkedBankBtn").wait_for(state="attached", timeout=10_000)
 
         run_step(results, "12_profile", page, "12_profile", profile_tab)
 

@@ -124,7 +124,23 @@
     }
     .icon-wrap svg { width: 20px; height: 20px; stroke: var(--primary); fill: none; stroke-width: 2; }
     .row-title { font-weight: 600; font-size: 0.92rem; }
-    .row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+    .row-points { font-size: 0.78rem; color: var(--primary); font-weight: 600; margin-top: 4px; white-space: nowrap; }
+    .bureau-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
+    .bureau-row svg { width: 18px; height: 18px; stroke: var(--primary); flex-shrink: 0; margin-top: 1px; }
+    .page-title, .page-sub { padding-left: 0; margin-left: 0; }
+    .chevron { width: 20px; height: 20px; stroke: var(--muted); flex-shrink: 0; }
+    .avatar-init {
+      width: 72px; height: 72px; margin: 0 auto 12px; border-radius: 50%;
+      background: var(--primary-soft); color: var(--primary);
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.25rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .linked-row {
+      width: 100%; text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line);
+      display: block;
+    }
+    .badge-unverified { background: #FEE2E2; color: #B91C1C; }
     .badge {
       font-size: 0.72rem; font-weight: 600; padding: 5px 8px; border-radius: 8px; white-space: nowrap;
     }
@@ -236,6 +252,8 @@
       smartphone: '<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
       landmark: '<svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V10l6-4 6 4v11"/><path d="M10 21v-6h4v6"/></svg>',
       star: '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6L12 2z"/></svg>',
+      shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+      chevron: '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>',
     };
     const REDEEM_IC = { rent: "rent", ebucks: "gift", airtime: "smartphone", cash: "landmark" };
     const RATES = { rent: 1.5, ebucks: 1, airtime: 1, cash: 0.5 };
@@ -301,7 +319,8 @@
       requestAnimationFrame(frame);
     }
 
-    function badgeClass(b) {
+    function badgeClass(b, u) {
+      if (b.is_bank_debit && u && !b.car_verified) return "badge-unverified";
       if (b.is_bank_debit) return "badge-debit";
       if (b.paid) return "badge-paid";
       return "badge-due";
@@ -310,24 +329,23 @@
     function renderHome() {
       const u = state.user;
       const h = state.home;
-      const tp = u.tier_progress;
-      const pct = tp.progress_den ? Math.min(100, (tp.progress_num / tp.progress_den) * 100) : 100;
+      const pct = h.gold_progress_pct ?? 50;
       const bills = state.payments.bills;
       document.getElementById("screenHome").innerHTML = `
         ${membershipCard(u, false)}
         <div class="section panel">
-          <p class="muted">${h.status_line}</p>
+          <p class="muted" style="font-weight:600;color:var(--ink)">${h.months_to_gold_line}</p>
           <div class="progress"><span style="width:${pct}%"></span></div>
-          <p class="muted" style="margin-top:8px;font-size:0.8rem">${h.progress_label}</p>
+          <p class="muted" style="margin-top:8px;font-size:0.8rem">${h.gold_progress_label}</p>
         </div>
         <div class="section panel score-row">
           <div class="score-ring"><strong class="font-num">742</strong><em>${u.score_label}</em></div>
           <div>
             <h3>Woza score</h3>
             <p class="muted">${u.score_caption}</p>
+            <div class="bureau-row">${IC.shield}<span>${h.bureau_line}</span></div>
           </div>
         </div>
-        <p class="muted section" style="margin-top:-8px">${h.bureau_line}</p>
         <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Your bills</h3>
         <div class="group-list section">
           ${bills.map(b => `
@@ -336,8 +354,9 @@
               <span>
                 <div class="row-title">${b.name}</div>
                 <div class="row-sub">${b.amount_display}</div>
+                <div class="row-points">${b.home_points_line}</div>
               </span>
-              <span class="badge ${badgeClass(b)}">${b.home_badge}</span>
+              <span class="badge ${badgeClass(b, u)}">${b.home_badge}</span>
             </button>`).join("")}
         </div>`;
       document.querySelectorAll("#screenHome [data-goto]").forEach(btn => {
@@ -358,11 +377,11 @@
         <h2 class="page-title">Payments</h2>
         <p class="page-sub">Earn points on the essentials.</p>
         <div class="panel pay-banner section">
-          <p class="muted">Paid through Woza this month</p>
-          <p class="big font-num">${p.paid_through_woza_display}</p>
-          <p class="muted">${p.car_debit_subline}</p>
+          <p class="muted">${p.hero_title}</p>
+          <p class="big font-num">${p.hero_amount}${p.hero_amount_suffix || ""}</p>
+          ${p.hero_earn_line ? `<p class="row-points" style="margin-top:6px">${p.hero_earn_line}</p>` : ""}
+          ${p.payable_outstanding ? `<p class="muted" style="margin-top:8px;font-size:0.78rem">${p.hero_grace_line}</p>` : ""}
         </div>
-        <p class="muted section" style="margin-top:-12px">${p.grace_info}</p>
         <div class="group-list section">
           ${p.bills.map(b => paymentRow(b)).join("")}
         </div>
@@ -378,7 +397,9 @@
 
     function paymentRow(b) {
       let action = "";
-      if (b.is_bank_debit) {
+      if (b.is_bank_debit && !b.car_verified) {
+        action = `<span class="badge badge-unverified">Not verified</span>`;
+      } else if (b.is_bank_debit) {
         action = `<span class="badge badge-debit">Bank debit order, 1 Nov</span>`;
       } else if (b.paid) {
         action = `<span class="badge badge-paid">Paid ✓</span>`;
@@ -390,7 +411,8 @@
           <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
           <span>
             <div class="row-title">${b.name}</div>
-            <div class="row-sub">${b.amount_display} · ${b.month_line}</div>
+            <div class="row-sub">${b.payment_due_line}</div>
+            <div class="row-points">${b.points_line}</div>
           </span>
           ${action}
         </div>`;
@@ -424,13 +446,14 @@
       if (!panel) return;
       if (rewardsTab === "redeem") {
         panel.innerHTML = `<div class="group-list">${r.redemption_options.map(o => `
-          <button type="button" class="group-row" data-opt="${o.id}" style="border-bottom:1px solid var(--line)">
+          <button type="button" class="group-row" data-opt="${o.id}" style="border-bottom:1px solid var(--line);grid-template-columns:40px 1fr 20px">
             <span class="icon-wrap">${IC[REDEEM_IC[o.id]] || IC.gift}</span>
-            <span style="grid-column:span 2">
+            <span>
               <div class="row-title">${o.title}</div>
               <div class="row-sub">${o.rate} · ${o.example}</div>
-              <div class="row-sub" style="color:var(--primary);margin-top:4px">${o.your_value_line}</div>
+              <div class="row-points">${o.your_value_line}</div>
             </span>
+            ${IC.chevron}
           </button>`).join("")}</div>`;
         panel.querySelectorAll("[data-opt]").forEach(el => {
           el.onclick = () => openRedeemSheet(el.dataset.opt);
@@ -439,12 +462,12 @@
         const b = r.benefits;
         panel.innerHTML = `
           <div class="panel">
-            <h3>Your Gold tier</h3>
-            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Your Silver tier</h3>
+            ${b.silver_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
           </div>
           <div class="panel" style="margin-top:16px">
-            <h3>Unlock with Black</h3>
-            ${b.black_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Unlock with Gold</h3>
+            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
           </div>`;
       } else {
         const b = r.benefits;
@@ -460,20 +483,46 @@
 
     function renderProfile() {
       const u = state.user;
+      const bank = u.linked_bank;
       document.getElementById("screenProfile").innerHTML = `
         <h2 class="page-title">Profile</h2>
-        <div class="panel" style="text-align:center;padding:24px">
-          <div class="icon-wrap" style="width:72px;height:72px;margin:0 auto 12px;border-radius:50%">${IC.star}</div>
+        <div class="panel" style="text-align:center;padding:24px 16px 16px">
+          <div class="avatar-init">${u.initials}</div>
           <h3 style="font-family:Sora,sans-serif">${u.name}</h3>
           <p class="muted" style="margin-top:6px">${u.phone}</p>
           <p style="color:var(--verified);margin-top:8px;font-size:0.88rem">Verified member since ${u.member_since}</p>
-          <div class="profile-actions">
-            <a href="/lender">Lender view (demo bureau)</a>
-            <button type="button" class="danger" id="resetBtn">Reset demo</button>
-          </div>
-          <p class="demo-note">Demo mode. No real money moves.</p>
-        </div>`;
+        </div>
+        <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Linked bank</h3>
+        <div class="group-list section">
+          <button type="button" class="linked-row" id="linkedBankBtn">
+            <div class="row-title">${bank.label}</div>
+            <div class="row-sub">${bank.consent_active ? bank.consent_until : "Consent revoked"}</div>
+          </button>
+        </div>
+        <div class="profile-actions section">
+          <a href="/lender">Lender view (demo bureau)</a>
+          <button type="button" class="danger" id="resetBtn">Reset demo</button>
+        </div>
+        <p class="demo-note">Demo mode. No real money moves.</p>`;
       document.getElementById("resetBtn").onclick = openResetSheet;
+      document.getElementById("linkedBankBtn").onclick = openBankSheet;
+    }
+
+    function openBankSheet() {
+      openSheet(`
+        <h3>Linked bank</h3>
+        <p class="muted">Woza reads your car debit order from this account. Woza never moves money from it.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="revokeConsent" style="background:#b91c1c">Revoke consent</button>
+          <button type="button" class="btn-secondary" id="bankClose">Close</button>
+        </div>`);
+      document.getElementById("bankClose").onclick = closeSheet;
+      document.getElementById("revokeConsent").onclick = () => withBusy(async () => {
+        state = await api("/api/revoke_bank_consent", { method: "POST", body: "{}" });
+        closeSheet();
+        renderAll();
+        toast("Bank consent revoked");
+      });
     }
 
     function renderAll() {
@@ -529,7 +578,7 @@
         const pts = data.event?.points_added || 0;
         openSheet(`
           <h3>Paid</h3>
-          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">+${fmtPts(pts)} points</p>
+          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">+${fmtPts(pts)}</p>
           <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
         document.getElementById("donePay").onclick = closeSheet;
       });
