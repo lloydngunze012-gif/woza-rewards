@@ -331,13 +331,6 @@ def pay_bill(user: User, db: Session, bill: Bill, period: str = CURRENT_PERIOD) 
     if all_bills_paid(user, db, period):
         user.months_on_time += 1
         user.status = status_for_months(user.months_on_time)
-        earned = user.months_on_time // 12
-        if earned > (user.months_on_time - 1) // 12:
-            pass
-        prev_grace_earned = max(0, (user.months_on_time - 1) // 12 - 2)
-        new_grace_earned = max(0, user.months_on_time // 12 - 2)
-        if new_grace_earned > prev_grace_earned:
-            user.grace_months += new_grace_earned - prev_grace_earned
 
     return pay
 
