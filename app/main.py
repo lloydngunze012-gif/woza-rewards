@@ -57,6 +57,8 @@ def migrate_schema() -> None:
         statements.append("ALTER TABLE users ADD COLUMN grace_months_earned INTEGER DEFAULT 0")
     if "demo_version" not in cols:
         statements.append("ALTER TABLE users ADD COLUMN demo_version INTEGER DEFAULT 0")
+    if "bank_consent_active" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN bank_consent_active BOOLEAN DEFAULT 1")
     if statements:
         with engine.begin() as conn:
             for stmt in statements:
@@ -141,20 +143,51 @@ def month_activity_line(bill: Bill, period: str = CURRENT_PERIOD) -> str:
     return f"Due 1 Nov · earns {fmt_pts_num(bill.points_per_month)} pts"
 
 
-def home_bill_badge(bill: Bill, period: str = CURRENT_PERIOD) -> str:
+def format_rate(rate: float) -> str:
+    if rate == 1.0:
+        return "1 cent per point"
+    if rate == 1.5:
+        return "1.5 cents per point"
+    if rate == 0.5:
+        return "0.5 cents per point"
+    return f"{rate} cents per point"
+
+
+def home_points_line(bill: Bill) -> str:
+    pts = fmt_pts_num(bill.points_per_month)
+    if bill.verification == "bank_feed":
+        return f"+{pts} pts when your bank confirms"
+    return f"+{pts} pts"
+
+
+def home_bill_badge(
+    bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active: bool = True
+) -> str:
     pay = payment_for_period(bill, period)
     if bill.verification == "bank_feed":
+        if not bank_consent_active:
+            return "Not verified"
         return "Bank debit order, 1 Nov"
     if pay:
         return "Paid"
     return "Due 1 Nov"
 
 
-def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
+def bill_state(bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active: bool = True) -> dict:
     pay = payment_for_period(bill, period)
     grace = grace_for_period(bill, period)
     potential = bill.points_per_month
     is_woza = bill.verification == "through_woza"
+    car_verified = bank_consent_active and bill.verification == "bank_feed"
+    if bill.verification == "bank_feed" and not bank_consent_active:
+        verify_label = "Not verified"
+    elif bill.verification == "bank_feed":
+        verify_label = "Verified: Debit order read"
+    else:
+        verify_label = "Verified: Paid through Woza"
+    points_line = home_points_line(bill)
+    if pay:
+        points_line = f"+{fmt_pts_num(pay.points_awarded)} pts"
     state = {
         "id": bill.id,
         "name": bill.name,
@@ -174,8 +207,13 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
         "is_bank_debit": bill.verification == "bank_feed",
         "payable_through_woza": is_woza and pay is None and grace is None,
         "month_line": month_activity_line(bill, period),
-        "home_badge": home_bill_badge(bill, period),
+        "home_badge": home_bill_badge(bill, period, bank_consent_active=bank_consent_active),
         "pay_sheet_title": f"Pay {fmt_rand(bill.amount_cents)} {bill.name.lower()} through Woza",
+        "home_points_line": home_points_line(bill),
+        "payment_due_line": f"{fmt_rand(bill.amount_cents)} · due 1 Nov",
+        "points_line": points_line,
+        "verify_label": verify_label,
+        "car_verified": car_verified,
     }
     if pay:
         state["status_line"] = f"+{fmt_pts_num(pay.points_awarded)} pts"
@@ -200,15 +238,25 @@ def build_me_payload(user: User, db: Session) -> dict:
         .all()
     )
     period = CURRENT_PERIOD
-    bill_rows = [bill_state(b, period) for b in bills]
+    bill_rows = [bill_state(b, period, bank_consent_active=user.bank_consent_active) for b in bills]
     tier = next_tier_info(user.months_on_time)
     status = status_for_months(user.months_on_time)
     grace_used = db.query(GraceUse).join(Bill).filter(Bill.user_id == user.id).count()
 
+    woza_bills = [b for b in bills if b.verification == "through_woza"]
     paid_woza_cents = sum(
-        b.amount_cents for b in bills if b.verification == "through_woza" and bill_state(b, period)["paid"]
+        b.amount_cents
+        for b in woza_bills
+        if payment_for_period(b, period) is not None
+    )
+    due_woza_cents = sum(
+        b.amount_cents for b in woza_bills if payment_for_period(b, period) is None
+    )
+    due_woza_pts = sum(
+        b.points_per_month for b in woza_bills if payment_for_period(b, period) is None
     )
     payable_outstanding = any(b["payable_through_woza"] for b in bill_rows)
+    all_woza_paid = due_woza_cents == 0 and paid_woza_cents > 0
 
     redemptions = (
         db.query(Redemption)
@@ -232,10 +280,10 @@ def build_me_payload(user: User, db: Session) -> dict:
     redemption_options = []
     for opt_id, rate in REDEMPTION_RATES.items():
         titles = {
-            "rent": "Towards Next Rent",
+            "rent": "Towards next rent",
             "ebucks": "eBucks",
             "airtime": "Airtime",
-            "cash": "Cash Out to Bank",
+            "cash": "Cash out to bank",
         }
         examples = {
             "rent": "100 000 pts = R1 500",
@@ -249,17 +297,14 @@ def build_me_payload(user: User, db: Session) -> dict:
             {
                 "id": opt_id,
                 "title": titles[opt_id],
-                "rate": f"{rate} cents per point",
+                "rate": format_rate(rate),
                 "example": examples[opt_id],
                 "your_value_line": f"Your {fmt_pts_num(user.points)} pts = {val} {suffix}",
             }
         )
 
-    progress_label = (
-        f"{tier['progress_num']} of {tier['progress_den']} months to {tier['next']}"
-        if tier["next"]
-        else "Top tier reached"
-    )
+    months_to_black = tier["months_needed"] if tier["next"] == "Black" else 0
+    black_progress_label = f"{user.months_on_time} of 48 on-time months"
 
     return {
         "user": {
@@ -270,7 +315,13 @@ def build_me_payload(user: User, db: Session) -> dict:
             "months_on_time": user.months_on_time,
             "score": 742,
             "score_label": score_label(742),
-            "score_caption": "Woza Score - not your credit bureau score",
+            "score_caption": "Not your credit bureau score",
+            "initials": "TM",
+            "linked_bank": {
+                "label": "FNB Cheque ••4821",
+                "consent_until": "Consent active until Oct 2027",
+                "consent_active": user.bank_consent_active,
+            },
             "available_points": user.points,
             "available_display": fmt_pts(user.points),
             "redeemed_points": user.redeemed_points,
@@ -293,18 +344,19 @@ def build_me_payload(user: User, db: Session) -> dict:
         },
         "home": {
             "greeting": f"Good morning, {user.name.split()[0]}",
-            "status_line": f"{status} · {user.months_on_time} months  →  {tier['next'] or 'Top tier'} in {tier['months_needed']} months"
-            if tier["next"]
-            else f"{status} · {user.months_on_time} months",
-            "progress_label": progress_label,
+            "months_to_black_line": f"{months_to_black} months to Black",
+            "black_progress_label": black_progress_label,
+            "black_progress_pct": min(100, int(user.months_on_time / 48 * 100)),
             "bureau_line": f"{user.months_on_time} on-time months shared with the credit bureau",
-            "month_activity": [{"name": b["name"], "line": b["month_line"]} for b in bill_rows],
-            "bills_on_track": ["Rent", "Utilities", "Car"],
+            "bills_on_track": ["Rent", "Utilities", "Car finance"],
         },
         "payments": {
-            "paid_through_woza_display": fmt_rand(paid_woza_cents),
-            "car_debit_subline": "Car R3 200 debits from your bank on 1 Nov",
-            "grace_info": f"{user.grace_months} grace months available ({user.grace_months_earned} earned, {grace_used} used)",
+            "hero_title": "Due through Woza" if payable_outstanding else "Paid through Woza",
+            "hero_amount": fmt_rand(due_woza_cents if payable_outstanding else paid_woza_cents),
+            "hero_amount_suffix": "" if payable_outstanding else " ✓",
+            "hero_earn_line": f"Earns {fmt_pts_num(due_woza_pts)} pts" if payable_outstanding else "",
+            "hero_grace_line": f"{user.grace_months} grace months available ({user.grace_months_earned} earned, {grace_used} used)",
+            "all_woza_paid": all_woza_paid,
             "payable_outstanding": payable_outstanding,
             "bills": bill_rows,
         },
@@ -522,6 +574,15 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
     return payload
 
 
+@app.post("/api/revoke_bank_consent")
+def revoke_bank_consent(request: Request, db: DbDep):
+    user = require_user(request, db)
+    user.bank_consent_active = False
+    db.commit()
+    db.refresh(user)
+    return build_me_payload(user, db)
+
+
 @app.post("/api/reset")
 def reset_demo(request: Request, response: Response, db: DbDep):
     get_user_id(request)
@@ -565,6 +626,11 @@ def lender_view(db: DbDep):
             "summary": f"{after['on_time_months']} on-time months, {after['bill_count']} bills, {after['monthly_display']}/month, {after['status']}, score {after['score']}, {after['grace_unused']} grace unused",
         },
     }
+
+
+@app.get("/api/health")
+def health():
+    return {"ok": True, "service": "woza-rewards"}
 
 
 @app.get("/")
