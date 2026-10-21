@@ -7,8 +7,12 @@ from sqlalchemy.orm import Session
 from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
 CURRENT_PERIOD = "2026-11"
-PAYDAY = datetime(2026, 10, 25)
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
+DEMO_VERSION = 2
+
+AVAILABLE_POINTS = 12_000
+LIFETIME_POINTS = 331_200
+REDEEMED_POINTS = 319_200
 
 
 def _periods_back(end_period: str, count: int) -> list[str]:
@@ -37,10 +41,14 @@ def drop_and_reseed() -> None:
 
 
 def seed_if_empty(db: Session) -> None:
-    if db.query(User).first() is not None:
+    user = db.query(User).first()
+    if user is None:
+        _seed(db)
+        db.commit()
         return
-    _seed(db)
-    db.commit()
+    if user.demo_version != DEMO_VERSION:
+        db.close()
+        drop_and_reseed()
 
 
 def _seed(db: Session) -> None:
@@ -50,14 +58,26 @@ def _seed(db: Session) -> None:
         status="Gold",
         months_on_time=36,
         score=742,
-        points=331_200,
-        lifetime_points=331_200,
+        points=AVAILABLE_POINTS,
+        lifetime_points=LIFETIME_POINTS,
+        redeemed_points=REDEEMED_POINTS,
         woza_cash_cents=12_500,
         grace_months=2,
-        demo_payments_count=0,
+        grace_months_earned=3,
+        demo_version=DEMO_VERSION,
     )
     db.add(user)
     db.flush()
+
+    db.add(
+        Redemption(
+            user_id=user.id,
+            option="rent",
+            points_spent=REDEEMED_POINTS,
+            value_cents=int(REDEEMED_POINTS * 1.5),
+            created_at=datetime(2026, 9, 15, 12, 0, 0),
+        )
+    )
 
     bills_spec = [
         {
@@ -96,6 +116,7 @@ def _seed(db: Session) -> None:
     ]
 
     last_paid = "2026-10"
+    bill_ids: dict[str, int] = {}
     for spec in bills_spec:
         bill = Bill(
             user_id=user.id,
@@ -110,6 +131,7 @@ def _seed(db: Session) -> None:
         )
         db.add(bill)
         db.flush()
+        bill_ids[spec["category"]] = bill.id
 
         periods = _periods_back(last_paid, spec["history_months"])
         for period in periods:
@@ -125,6 +147,27 @@ def _seed(db: Session) -> None:
                 )
             )
 
+    paid_at = datetime(2026, 10, 28, 11, 0, 0)
+    for category, pts in (("rent", 4_500), ("utilities", 1_500)):
+        db.add(
+            Payment(
+                bill_id=bill_ids[category],
+                period=CURRENT_PERIOD,
+                paid_at=paid_at,
+                on_time=True,
+                verified_by="through_woza",
+                points_awarded=pts,
+            )
+        )
+
+    db.add(
+        GraceUse(
+            bill_id=bill_ids["utilities"],
+            period="2024-08",
+            used_at=datetime(2024, 8, 5, 9, 0, 0),
+        )
+    )
+
 
 def status_for_months(months: int) -> str:
     if months >= 48:
@@ -138,7 +181,7 @@ def status_for_months(months: int) -> str:
 
 def next_tier_info(months: int) -> dict:
     if months >= 48:
-        return {"next": None, "months_needed": 0, "progress_num": 48, "progress_den": 48}
+        return {"next": None, "months_needed": 0, "progress_num": 24, "progress_den": 24}
     if months >= 24:
         return {
             "next": "Black",
@@ -174,4 +217,11 @@ REDEMPTION_RATES = {
     "ebucks": 1.0,
     "airtime": 1.0,
     "cash": 0.5,
+}
+
+REDEEM_VALUE_LABELS = {
+    "rent": "off rent",
+    "ebucks": "in eBucks",
+    "airtime": "airtime",
+    "cash": "cash out",
 }

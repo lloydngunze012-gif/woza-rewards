@@ -169,39 +169,39 @@
       padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 12px;
     }
     .pay-row {
-      background: #fff; color: #1A1033; border-radius: var(--radius);
+      background: var(--card); color: var(--text); border-radius: var(--radius);
       padding: 14px; margin-bottom: 10px; display: grid;
       grid-template-columns: 44px 1fr auto; gap: 10px; align-items: start;
+      border: 1px solid rgba(196,181,253,0.08);
     }
-    .pay-row.paid { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.4); color: var(--text); }
-    .pay-row.grace { background: rgba(196,181,253,0.08); border: 1px solid rgba(196,181,253,0.25); color: var(--text); }
+    .pay-row.paid { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35); }
     .icon-circle {
       width: 44px; height: 44px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
     }
+    .icon-circle svg { width: 22px; height: 22px; stroke: var(--light); }
     .pay-row h3 { font-size: 0.95rem; margin-bottom: 2px; }
     .pay-row .amt { font-weight: 700; font-size: 0.95rem; }
-    .pay-meta { font-size: 0.72rem; color: #64748b; margin-top: 4px; line-height: 1.35; }
-    .pay-row.paid .pay-meta, .pay-row.grace .pay-meta { color: var(--muted); }
-    .earn-line { font-size: 0.75rem; color: var(--primary); margin-top: 6px; font-weight: 600; }
+    .pay-meta { font-size: 0.72rem; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+    .earn-line { font-size: 0.75rem; color: var(--light); margin-top: 6px; font-weight: 600; }
     .pay-row.paid .earn-line { color: var(--green); }
+    .badge-paid {
+      background: rgba(34,197,94,0.2); color: var(--green); padding: 6px 10px;
+      border-radius: 8px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+    }
+    .badge-debit {
+      background: rgba(255,255,255,0.08); color: var(--muted); padding: 6px 10px;
+      border-radius: 8px; font-size: 0.72rem; font-weight: 500; white-space: nowrap;
+    }
+    .bureau-line { font-size: 0.82rem; color: var(--muted); margin: -4px 0 12px; line-height: 1.4; }
+    .score-caption { font-size: 0.72rem; color: var(--muted); margin-top: 8px; line-height: 1.35; }
+    .month-activity { font-size: 0.82rem; color: var(--light); margin-top: 6px; }
     .btn-pay {
       background: var(--primary); color: #fff; padding: 8px 14px;
       border-radius: 10px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;
     }
     .btn-pay:disabled { opacity: 0.5; }
-    .badge-auto {
-      background: #E2E8F0; color: #334155; padding: 6px 10px;
-      border-radius: 8px; font-size: 0.75rem; font-weight: 600;
-    }
-    .link-btn {
-      color: var(--light); font-size: 0.88rem; text-decoration: underline;
-      margin: 12px 0; display: inline-block;
-    }
-    .stub-row {
-      padding: 14px; border-radius: 14px; border: 1px dashed rgba(196,181,253,0.25);
-      color: var(--muted); font-size: 0.85rem; text-align: center;
-    }
+    .redeem-icon svg { width: 24px; height: 24px; stroke: var(--light); }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
     .tab {
@@ -252,12 +252,13 @@
       width: 100%; max-width: 390px;
       height: calc(var(--nav-h) + var(--safe-b));
       padding-bottom: var(--safe-b);
-      background: #fff; display: flex; align-items: center;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+      background: var(--card); display: flex; align-items: center;
+      border-top: 1px solid rgba(196,181,253,0.12);
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.35);
     }
     .nav button {
       flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      font-size: 0.68rem; color: #94a3b8; padding: 8px 0;
+      font-size: 0.68rem; color: var(--muted); padding: 8px 0;
     }
     .nav button.active { color: var(--primary); }
     .nav svg { width: 22px; height: 22px; }
@@ -334,7 +335,7 @@
         Payments
       </button>
       <button type="button" data-tab="rewards">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v13M12 8a4 4 0 100-8 4 4 0 000 8zM5 8h14a2 2 0 012 2v1H3v-1a2 2 0 012-2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>
         Rewards
       </button>
       <button type="button" data-tab="profile">
@@ -351,7 +352,14 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const ICONS = { rent: "🏠", utilities: "⚡", car: "🚗" };
+    const ICON_SVG = {
+      rent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 01-1 1h-5v-5H10v5H5a1 1 0 01-1-1v-8.5z"/></svg>',
+      utilities: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z"/></svg>',
+      car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16l1-4h12l1 4M6 16v2M18 16v2M4 12l2-5h12l2 5"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg>',
+      ebucks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/></svg>',
+      airtime: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+      cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>',
+    };
     const ICON_BG = { rent: "#6D28D9", utilities: "#8B5CF6", car: "#BE185D" };
     let state = null;
     let busy = false;
@@ -403,8 +411,6 @@
       const h = state.home;
       const tp = u.tier_progress;
       const pct = tp.progress_den ? Math.min(100, (tp.progress_num / tp.progress_den) * 100) : 100;
-      const earned = h.month_earned_points;
-      const displayPts = earned > 0 ? fmtPts(earned) : fmtPts(0);
       const bills = state.payments.bills;
       document.getElementById("screenHome").innerHTML = `
         <header class="app-header">
@@ -416,8 +422,8 @@
         </header>
         <p class="greeting">${h.greeting}</p>
         <div class="card hero">
-          <div class="card-label">Your Points</div>
-          <div class="big-num">${displayPts.replace(" pts", "")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
+          <div class="card-label">Available points</div>
+          <div class="big-num">${u.available_display.replace(" pts", "")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
           <div class="row-split">
             <div><div class="mini-label">Lifetime Points</div><div class="mini-val">${u.lifetime_display.replace(" pts","")}</div></div>
             <div><div class="mini-label">Tier Status</div><div class="mini-val">${u.status}</div></div>
@@ -428,13 +434,23 @@
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="progress-caption">${h.progress_label}</div>
         </div>
+        <p class="bureau-line">${h.bureau_line}</p>
         <div class="card score-card">
           <div class="ring"><strong>${u.score}</strong><em>${u.score_label}</em></div>
           <div>
             <div class="card-label">Woza Score</div>
             <p style="font-size:0.85rem;color:var(--muted);margin-top:4px">On-time payments build your score</p>
             <div class="chips">${h.bills_on_track.map(b => `<span class="chip">${b} · On track</span>`).join("")}</div>
+            <p class="score-caption">${u.score_caption}</p>
           </div>
+        </div>
+        <p class="section-title">This month</p>
+        <div class="bill-tiles">
+          ${h.month_activity.map(a => `
+            <div class="tile">
+              <div class="tile-top"><span>${a.name}</span></div>
+              <div class="month-activity">${a.line}</div>
+            </div>`).join("")}
         </div>
         <p class="section-title">Your Bills</p>
         <div class="bill-tiles">
@@ -448,22 +464,20 @@
 
     function renderPayments() {
       const p = state.payments;
-      const m = state.meta;
       document.getElementById("screenPayments").innerHTML = `
         <h2 class="page-title">Make a Payment</h2>
         <p class="page-sub">Earn points on the essentials.</p>
         <div class="card due-banner">
-          <div class="card-label">Total due this month</div>
-          <div class="big-num" style="font-size:1.6rem">${p.total_due_display}</div>
-          <div class="earn">Earns ${p.earn_if_paid_display} when paid on time</div>
+          <div class="card-label">Paid through Woza this month</div>
+          <div class="big-num" style="font-size:1.6rem">${p.paid_through_woza_display}</div>
+          <div class="earn">${p.car_debit_subline}</div>
         </div>
-        <div class="payday-row">Payday ${m.payday_display} · ${m.payday_multiplier}× pts before payday · ${state.user.grace_months} grace months available</div>
+        <div class="payday-row">${p.grace_info}</div>
         ${p.bills.map(b => paymentRow(b)).join("")}
-        <button type="button" class="btn-primary" id="payAllBtn" style="margin:12px 0 8px">Pay all bills</button>
-        <div class="stub-row">Upcoming payments · manage scheduled debits (demo stub)</div>
-        <button type="button" class="link-btn" id="graceLink">Use a grace month</button>`;
-      document.getElementById("payAllBtn").onclick = () => actionPayAll();
-      document.getElementById("graceLink").onclick = openGraceSheet;
+        ${p.payable_outstanding ? `<button type="button" class="btn-primary" id="payAllBtn" style="margin:12px 0 8px">Pay all bills</button>` : ""}`;
+      if (p.payable_outstanding) {
+        document.getElementById("payAllBtn").onclick = () => actionPayAll();
+      }
       p.bills.forEach(b => {
         const btn = document.getElementById("pay-" + b.id);
         if (btn) btn.onclick = () => actionPay(b.id);
@@ -471,15 +485,20 @@
     }
 
     function paymentRow(b) {
-      const cls = b.paid ? "paid" : b.grace_used ? "grace" : "";
+      const cls = b.paid ? "paid" : "";
       const verify = verificationLabel(b.verification);
-      const right = b.is_auto
-        ? `<span class="badge-auto">${b.paid ? "Paid" : "Auto"}</span>`
-        : `<button type="button" class="btn-pay" id="pay-${b.id}" ${b.paid || b.grace_used ? "disabled" : ""}>Pay</button>`;
-      const earn = b.paid ? b.status_line : `Earns ${fmtPts(b.potential_points)}`;
+      let right = "";
+      if (b.is_bank_debit) {
+        right = `<span class="badge-debit">Bank debit order</span>`;
+      } else if (b.paid) {
+        right = `<span class="badge-paid">Paid ✓</span>`;
+      } else {
+        right = `<button type="button" class="btn-pay" id="pay-${b.id}">Pay</button>`;
+      }
+      const earn = b.month_line;
       return `
         <div class="pay-row ${cls}">
-          <div class="icon-circle" style="background:${ICON_BG[b.category] || "#6D28D9"}22;color:${ICON_BG[b.category]}">${ICONS[b.category] || "💳"}</div>
+          <div class="icon-circle" style="background:${ICON_BG[b.category] || "#6D28D9"}33">${ICON_SVG[b.category] || ""}</div>
           <div>
             <h3>${b.name}</h3>
             <div class="amt">${b.amount_display}</div>
@@ -496,8 +515,8 @@
       document.getElementById("screenRewards").innerHTML = `
         <h2 class="page-title">Your Rewards</h2>
         <div class="card hero">
-          <div class="card-label">Total Points</div>
-          <div class="big-num">${u.points_display.replace(" pts","")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
+          <div class="card-label">Available points</div>
+          <div class="big-num">${u.available_display.replace(" pts","")}<span style="font-size:1rem;color:var(--muted)"> pts</span></div>
           <div class="row-split">
             <div><div class="mini-label">Tier Status</div><div class="mini-val">${u.status}</div></div>
             <div><div class="mini-label">Lifetime Points</div><div class="mini-val">${u.lifetime_display.replace(" pts","")}</div></div>
@@ -506,7 +525,7 @@
         <div class="card">
           <div class="card-label">Woza Cash</div>
           <div class="big-num" style="font-size:1.4rem">${u.woza_cash_display}</div>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:6px">Use for future bill payments</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:6px">${u.woza_cash_subline}</p>
         </div>
         <div class="tabs">
           <button type="button" class="tab ${rewardsTab==="redeem"?"active":""}" data-rtab="redeem">Redeem</button>
@@ -525,13 +544,13 @@
       const panel = document.getElementById("rewardsPanel");
       if (!panel) return;
       if (rewardsTab === "redeem") {
-        const icons = { rent: "🏠", ebucks: "🎁", airtime: "📱", cash: "🏦" };
         panel.innerHTML = `<div class="card">${r.redemption_options.map(o => `
           <div class="redeem-item" data-opt="${o.id}">
-            <div class="redeem-icon">${icons[o.id] || "✨"}</div>
+            <div class="redeem-icon">${ICON_SVG[o.id] || ICON_SVG.rent}</div>
             <div>
               <h4>${o.title}</h4>
               <p>${o.rate} · ${o.example}</p>
+              <p style="margin-top:4px;color:var(--light);font-size:0.78rem">${o.your_value_line}</p>
             </div>
           </div>`).join("")}</div>`;
         panel.querySelectorAll(".redeem-item").forEach(el => {
@@ -559,7 +578,7 @@
           <div class="avatar">${u.name.charAt(0)}</div>
           <h3>${u.name}</h3>
           <p style="color:var(--muted);margin-top:6px">${u.phone}</p>
-          <p class="verified">It's you · verified</p>
+          <p class="verified">Verified member since ${u.member_since}</p>
           <div class="profile-actions">
             <a href="/lender">Lender view (demo bureau)</a>
             <button type="button" class="danger" id="resetBtn">Reset demo</button>
@@ -629,27 +648,6 @@
       document.getElementById("sheetBackdrop").classList.remove("open");
     }
 
-    function openGraceSheet() {
-      const bills = state.payments.bills.filter(b => !b.paid && !b.grace_used);
-      document.getElementById("sheetBody").innerHTML = `
-        <h3>Use a grace month</h3>
-        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:12px">${state.user.grace_months} remaining · streak held, no points this month</p>
-        ${bills.length ? bills.map(b => `
-          <button type="button" class="grace-option" data-gid="${b.id}">${b.name} · ${b.amount_display}</button>`).join("") : `<p>No unpaid bills eligible.</p>`}
-        <button type="button" class="sheet-cancel" style="width:100%;margin-top:8px;padding:12px;border-radius:12px" id="graceCancel">Cancel</button>`;
-      document.getElementById("sheet").classList.add("open");
-      document.getElementById("sheetBackdrop").classList.add("open");
-      document.getElementById("graceCancel").onclick = closeSheet;
-      document.querySelectorAll("[data-gid]").forEach(btn => {
-        btn.onclick = () => withBusy(async () => {
-          state = await api("/api/grace", { method: "POST", body: JSON.stringify({ bill_id: +btn.dataset.gid }) });
-          closeSheet();
-          renderAll();
-          toast("Grace month applied");
-        });
-      });
-    }
-
     const RATES = { rent: 1.5, ebucks: 1, airtime: 1, cash: 0.5 };
 
     function openRedeemSheet(opt) {
@@ -658,7 +656,7 @@
       document.getElementById("sheetBody").innerHTML = `
         <h3>${title}</h3>
         <label class="card-label" for="ptsIn">Points to redeem</label>
-        <input type="number" id="ptsIn" min="1000" step="1000" value="10000" />
+        <input type="number" id="ptsIn" min="1000" step="1000" value="${state.user.available_points}" />
         <div class="computed" id="valOut"></div>
         <div class="sheet-actions">
           <button type="button" class="sheet-cancel" id="redeemCancel">Cancel</button>

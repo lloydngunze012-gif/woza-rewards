@@ -31,9 +31,11 @@ class User(Base):
     score = Column(Integer, default=742)
     points = Column(Integer, default=0)
     lifetime_points = Column(Integer, default=0)
+    redeemed_points = Column(Integer, default=0)
     woza_cash_cents = Column(Integer, default=0)
     grace_months = Column(Integer, default=0)
-    demo_payments_count = Column(Integer, default=0)
+    grace_months_earned = Column(Integer, default=0)
+    demo_version = Column(Integer, default=0)
 
     bills = relationship("Bill", back_populates="user")
     redemptions = relationship("Redemption", back_populates="user")

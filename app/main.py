@@ -6,17 +6,19 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, init_db
+from sqlalchemy import inspect, text
+
+from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, engine, init_db
 from app.seed import (
     CURRENT_PERIOD,
     DEMO_NOW,
-    PAYDAY,
     REDEMPTION_RATES,
+    REDEEM_VALUE_LABELS,
     drop_and_reseed,
     next_tier_info,
     score_label,
@@ -42,9 +44,28 @@ def get_db():
 DbDep = Annotated[Session, Depends(get_db)]
 
 
+def migrate_schema() -> None:
+    init_db()
+    insp = inspect(engine)
+    if not insp.has_table("users"):
+        return
+    cols = {c["name"] for c in insp.get_columns("users")}
+    statements = []
+    if "redeemed_points" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN redeemed_points INTEGER DEFAULT 0")
+    if "grace_months_earned" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN grace_months_earned INTEGER DEFAULT 0")
+    if "demo_version" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN demo_version INTEGER DEFAULT 0")
+    if statements:
+        with engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+
+
 @app.on_event("startup")
 def startup():
-    init_db()
+    migrate_schema()
     db = SessionLocal()
     try:
         seed_if_empty(db)
@@ -57,21 +78,27 @@ def fmt_pts(n: int) -> str:
     return f"{s} pts"
 
 
+def fmt_pts_num(n: int) -> str:
+    return f"{n:,}".replace(",", " ")
+
+
 def fmt_rand(cents: int) -> str:
     rands = cents // 100
     s = f"{rands:,}".replace(",", " ")
     return f"R{s}"
 
 
+def fmt_rand_from_pts(option: str, points: int) -> str:
+    rate = REDEMPTION_RATES[option]
+    cents = int(points * rate)
+    rands = cents / 100
+    if rands == int(rands):
+        return f"R{int(rands):,}".replace(",", " ")
+    return f"R{rands:,.2f}".replace(",", " ")
+
+
 def demo_now() -> datetime:
     return DEMO_NOW
-
-
-def points_multiplier(at: datetime | None = None) -> int:
-    at = at or demo_now()
-    if at < PAYDAY:
-        return 2
-    return 1
 
 
 def get_user_id(request: Request) -> int | None:
@@ -105,11 +132,20 @@ def grace_for_period(bill: Bill, period: str) -> GraceUse | None:
     return None
 
 
+def month_activity_line(bill: Bill, period: str = CURRENT_PERIOD) -> str:
+    pay = payment_for_period(bill, period)
+    if pay:
+        return f"+{fmt_pts_num(pay.points_awarded)} pts"
+    if bill.verification == "bank_feed":
+        return f"+{fmt_pts_num(bill.points_per_month)} pts once your bank confirms it"
+    return f"Due {bill.points_per_month // 100} Nov"
+
+
 def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
     pay = payment_for_period(bill, period)
     grace = grace_for_period(bill, period)
-    mult = points_multiplier()
-    potential = bill.points_per_month * mult
+    potential = bill.points_per_month
+    is_woza = bill.verification == "through_woza"
     state = {
         "id": bill.id,
         "name": bill.name,
@@ -126,10 +162,12 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD) -> dict:
         "points_awarded": pay.points_awarded if pay else 0,
         "potential_points": potential,
         "potential_display": fmt_pts(potential),
-        "is_auto": bill.verification == "bank_feed",
+        "is_bank_debit": bill.verification == "bank_feed",
+        "payable_through_woza": is_woza and pay is None and grace is None,
+        "month_line": month_activity_line(bill, period),
     }
     if pay:
-        state["status_line"] = f"Paid · {fmt_pts(pay.points_awarded)} earned"
+        state["status_line"] = f"+{fmt_pts_num(pay.points_awarded)} pts"
     elif grace:
         state["status_line"] = "Grace month used · no penalty · streak held"
     return state
@@ -143,16 +181,6 @@ def all_bills_paid(user: User, db: Session, period: str) -> bool:
     return True
 
 
-def month_earned_points(user: User, db: Session, period: str) -> int:
-    total = 0
-    bills = db.query(Bill).filter(Bill.user_id == user.id).all()
-    for b in bills:
-        p = payment_for_period(b, period)
-        if p:
-            total += p.points_awarded
-    return total
-
-
 def build_me_payload(user: User, db: Session) -> dict:
     bills = (
         db.query(Bill)
@@ -162,15 +190,14 @@ def build_me_payload(user: User, db: Session) -> dict:
     )
     period = CURRENT_PERIOD
     bill_rows = [bill_state(b, period) for b in bills]
-    total_due = sum(b.amount_cents for b in bills if not bill_state(b, period)["paid"])
-    total_potential = sum(
-        bill_state(b, period)["potential_points"]
-        for b in bills
-        if not bill_state(b, period)["paid"]
-    )
     tier = next_tier_info(user.months_on_time)
     status = status_for_months(user.months_on_time)
-    earned_month = month_earned_points(user, db, period)
+    grace_used = db.query(GraceUse).join(Bill).filter(Bill.user_id == user.id).count()
+
+    paid_woza_cents = sum(
+        b.amount_cents for b in bills if b.verification == "through_woza" and bill_state(b, period)["paid"]
+    )
+    payable_outstanding = any(b["payable_through_woza"] for b in bill_rows)
 
     redemptions = (
         db.query(Redemption)
@@ -191,6 +218,38 @@ def build_me_payload(user: User, db: Session) -> dict:
             }
         )
 
+    redemption_options = []
+    for opt_id, rate in REDEMPTION_RATES.items():
+        titles = {
+            "rent": "Towards Next Rent",
+            "ebucks": "eBucks",
+            "airtime": "Airtime",
+            "cash": "Cash Out to Bank",
+        }
+        examples = {
+            "rent": "100 000 pts = R1 500",
+            "ebucks": "100 000 pts = R1 000",
+            "airtime": "100 000 pts = R1 000",
+            "cash": "100 000 pts = R500",
+        }
+        val = fmt_rand_from_pts(opt_id, user.points)
+        suffix = REDEEM_VALUE_LABELS[opt_id]
+        redemption_options.append(
+            {
+                "id": opt_id,
+                "title": titles[opt_id],
+                "rate": f"{rate} cents per point",
+                "example": examples[opt_id],
+                "your_value_line": f"Your {fmt_pts_num(user.points)} pts = {val} {suffix}",
+            }
+        )
+
+    progress_label = (
+        f"{tier['progress_num']} of {tier['progress_den']} months to {tier['next']}"
+        if tier["next"]
+        else "Top tier reached"
+    )
+
     return {
         "user": {
             "id": user.id,
@@ -198,68 +257,48 @@ def build_me_payload(user: User, db: Session) -> dict:
             "phone": user.phone,
             "status": status,
             "months_on_time": user.months_on_time,
-            "score": user.score,
-            "score_label": score_label(user.score),
-            "points": user.points,
-            "points_display": fmt_pts(user.points),
+            "score": 742,
+            "score_label": score_label(742),
+            "score_caption": "Woza Score - not your credit bureau score",
+            "available_points": user.points,
+            "available_display": fmt_pts(user.points),
+            "redeemed_points": user.redeemed_points,
+            "redeemed_display": fmt_pts(user.redeemed_points),
             "lifetime_points": user.lifetime_points,
             "lifetime_display": fmt_pts(user.lifetime_points),
             "woza_cash_cents": user.woza_cash_cents,
             "woza_cash_display": fmt_rand(user.woza_cash_cents),
+            "woza_cash_subline": "From redeemed points - applied to your next Woza bill",
             "grace_months": user.grace_months,
+            "grace_months_earned": user.grace_months_earned,
+            "grace_months_used": grace_used,
+            "member_since": "Oct 2023",
             "tier_progress": tier,
         },
         "meta": {
             "current_period": period,
             "due_display": "1 Nov 2026",
-            "payday_display": "25 Oct 2026",
-            "payday_multiplier": points_multiplier(),
             "demo_now": demo_now().isoformat(),
         },
         "home": {
             "greeting": f"Good morning, {user.name.split()[0]}",
-            "month_earned_points": earned_month,
-            "month_earned_display": fmt_pts(earned_month),
-            "month_potential_points": 9_200,
             "status_line": f"{status} · {user.months_on_time} months  →  {tier['next'] or 'Top tier'} in {tier['months_needed']} months"
             if tier["next"]
             else f"{status} · {user.months_on_time} months",
-            "progress_label": f"{tier['progress_num']} / {tier['progress_den']} months to {tier['next'] or 'Black'}",
+            "progress_label": progress_label,
+            "bureau_line": f"{user.months_on_time} on-time months shared with the credit bureau",
+            "month_activity": [{"name": b["name"], "line": b["month_line"]} for b in bill_rows],
             "bills_on_track": ["Rent", "Utilities", "Car"],
         },
         "payments": {
-            "total_due_cents": total_due,
-            "total_due_display": fmt_rand(total_due),
-            "earn_if_paid_display": fmt_pts(total_potential if total_potential else 9_200),
+            "paid_through_woza_display": fmt_rand(paid_woza_cents),
+            "car_debit_subline": "Car R3 200 debits from your bank on 1 Nov",
+            "grace_info": f"{user.grace_months} grace months available ({user.grace_months_earned} earned, {grace_used} used)",
+            "payable_outstanding": payable_outstanding,
             "bills": bill_rows,
         },
         "rewards": {
-            "redemption_options": [
-                {
-                    "id": "rent",
-                    "title": "Towards Next Rent",
-                    "rate": "1.5 cents per point",
-                    "example": "100 000 pts = R1 500",
-                },
-                {
-                    "id": "ebucks",
-                    "title": "eBucks",
-                    "rate": "1 cent per point",
-                    "example": "100 000 pts = R1 000",
-                },
-                {
-                    "id": "airtime",
-                    "title": "Airtime",
-                    "rate": "1 cent per point",
-                    "example": "100 000 pts = R1 000",
-                },
-                {
-                    "id": "cash",
-                    "title": "Cash Out to Bank",
-                    "rate": "0.5 cents per point",
-                    "example": "100 000 pts = R500",
-                },
-            ],
+            "redemption_options": redemption_options,
             "redemptions": [
                 {
                     "option": r.option,
@@ -292,41 +331,35 @@ def bureau_summary(user: User, db: Session) -> dict:
         "bill_count": len(bills),
         "monthly_display": fmt_rand(monthly),
         "status": status_for_months(user.months_on_time),
-        "score": user.score,
+        "score": 742,
         "grace_unused": user.grace_months,
     }
 
 
 def pay_bill(user: User, db: Session, bill: Bill, period: str = CURRENT_PERIOD) -> Payment:
+    if bill.verification != "through_woza":
+        raise HTTPException(400, "This bill is paid via bank debit order")
     if payment_for_period(bill, period):
         raise HTTPException(400, "Already paid for this period")
     if grace_for_period(bill, period):
         raise HTTPException(400, "Grace month already used")
 
     at = demo_now()
-    mult = points_multiplier(at)
-    pts = bill.points_per_month * mult
-    verified = bill.verification
-
+    pts = bill.points_per_month
     pay = Payment(
         bill_id=bill.id,
         period=period,
         paid_at=at,
         on_time=True,
-        verified_by=verified,
+        verified_by=bill.verification,
         points_awarded=pts,
     )
     db.add(pay)
     bill.months_on_time += 1
-    user.points += pts
     user.lifetime_points += pts
-
-    if user.demo_payments_count < 18 and user.score < 760:
-        user.score += 1
-        user.demo_payments_count += 1
+    user.points += pts
 
     user.status = status_for_months(user.months_on_time)
-
     db.flush()
     if all_bills_paid(user, db, period):
         user.months_on_time += 1
@@ -408,6 +441,8 @@ def pay_all(request: Request, db: DbDep):
         .all()
     )
     for bill in bills:
+        if bill.verification != "through_woza":
+            continue
         if not payment_for_period(bill, CURRENT_PERIOD) and not grace_for_period(
             bill, CURRENT_PERIOD
         ):
@@ -419,27 +454,7 @@ def pay_all(request: Request, db: DbDep):
 
 @app.post("/api/grace")
 def use_grace(body: GraceBody, request: Request, db: DbDep):
-    user = require_user(request, db)
-    if user.grace_months <= 0:
-        raise HTTPException(400, "No grace months available")
-    bill = db.query(Bill).filter(Bill.id == body.bill_id, Bill.user_id == user.id).first()
-    if not bill:
-        raise HTTPException(404, "Bill not found")
-    if payment_for_period(bill, CURRENT_PERIOD):
-        raise HTTPException(400, "Bill already paid")
-    if grace_for_period(bill, CURRENT_PERIOD):
-        raise HTTPException(400, "Grace already used")
-    db.add(
-        GraceUse(
-            bill_id=bill.id,
-            period=CURRENT_PERIOD,
-            used_at=demo_now(),
-        )
-    )
-    user.grace_months -= 1
-    db.commit()
-    db.refresh(user)
-    return build_me_payload(user, db)
+    raise HTTPException(400, "Grace months apply automatically when a payment is late")
 
 
 @app.post("/api/redeem")
@@ -454,6 +469,7 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
     rate = REDEMPTION_RATES[body.option]
     value_cents = int(body.points * rate)
     user.points -= body.points
+    user.redeemed_points += body.points
     if body.option == "cash":
         user.woza_cash_cents += value_cents
     db.add(
