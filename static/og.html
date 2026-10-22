@@ -9,74 +9,120 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="woza-card.css" />
   <style>
+    :root {
+      --bg: #F6F4FB;
+      --ink: #1C1530;
+      --muted: #6B6485;
+      --primary: #5B2BD9;
+    }
     html, body {
       margin: 0;
       width: 1200px;
       height: 630px;
       overflow: hidden;
-      background: #F6F4FB;
+      background: var(--bg);
     }
     .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
     .og {
+      position: relative;
       width: 1200px;
       height: 630px;
-      box-sizing: border-box;
-      padding: 72px 80px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 48px;
-      background:
-        radial-gradient(ellipse at 88% 20%, rgba(91, 43, 217, 0.12), transparent 55%),
-        radial-gradient(ellipse at 12% 88%, rgba(201, 162, 74, 0.16), transparent 50%),
-        #F6F4FB;
+      overflow: hidden;
+      background: var(--bg);
     }
-    .brand { max-width: 420px; }
+    .og-rosette {
+      position: absolute;
+      left: -220px;
+      bottom: -280px;
+      width: 820px;
+      height: 820px;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .og-rosette svg { width: 100%; height: 100%; display: block; }
+    .brand {
+      position: absolute;
+      left: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 440px;
+      z-index: 1;
+    }
+    .lockup {
+      display: flex;
+      flex-direction: row;
+      align-items: baseline;
+      gap: 18px;
+    }
     .mark {
       width: 72px;
       height: 72px;
       border-radius: 50%;
-      background: #5B2BD9;
+      background: var(--primary);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: "Sora", sans-serif;
       font-weight: 700;
-      font-size: 2rem;
-      margin-bottom: 22px;
+      font-size: 32px;
+      line-height: 1;
+      flex-shrink: 0;
     }
     .wordmark {
       font-family: "Sora", sans-serif;
       font-weight: 700;
-      font-size: 76px;
-      color: #1C1530;
-      letter-spacing: -0.03em;
-      line-height: 0.95;
+      font-size: 120px;
+      color: var(--ink);
+      letter-spacing: -0.04em;
+      line-height: 0.9;
     }
     .slogan {
+      font-family: "Sora", sans-serif;
+      font-weight: 600;
+      font-size: 44px;
+      color: var(--ink);
+      line-height: 1.12;
+      margin-top: 28px;
+    }
+    .pitch {
       font-family: "DM Sans", sans-serif;
-      font-size: 22px;
-      color: #6B6485;
+      font-weight: 400;
+      font-size: 28px;
+      color: var(--muted);
+      line-height: 1.3;
       margin-top: 18px;
-      line-height: 1.35;
     }
-    .card-wrap {
-      width: 560px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 22px 40px rgba(60, 40, 10, 0.22));
+    .card-stage {
+      position: absolute;
+      width: 640px;
+      right: -60px;
+      /* 40px clearance + drop from -6deg around the right edge (640 * sin 6°) */
+      bottom: 107px;
+      transform: rotate(-6deg);
+      transform-origin: bottom right;
+      filter: drop-shadow(0 30px 60px rgba(60, 40, 10, 0.3));
+      z-index: 2;
     }
-    .card-wrap .membership-card { margin-bottom: 0; }
+    .card-stage .membership-card {
+      margin: 0;
+      width: 640px;
+    }
   </style>
 </head>
 <body>
   <div class="og">
+    <div class="og-rosette" id="ogRose" aria-hidden="true"></div>
     <div class="brand">
-      <div class="mark" aria-hidden="true">W</div>
-      <div class="wordmark">Woza</div>
+      <div class="lockup">
+        <div class="mark" aria-hidden="true">W</div>
+        <div class="wordmark">Woza</div>
+      </div>
       <p class="slogan">Pay today. Earn tomorrow.</p>
+      <p class="pitch">Rewards and a credit record for the bills you already pay on time.</p>
     </div>
-    <div class="card-wrap" id="card"></div>
+    <div class="card-stage" id="card"></div>
   </div>
   <script src="woza-card.js"></script>
   <script>
@@ -88,6 +134,12 @@
       member_since: "Oct 2023",
       available_points: 12000,
     }, false);
+    document.getElementById("ogRose").innerHTML =
+      '<svg viewBox="-120 -120 240 240" preserveAspectRatio="xMidYMid meet">' +
+      '<g transform="scale(1)"><use href="#woza-rose-58" stroke="#1C1530" stroke-width="0.5" fill="none"/></g>' +
+      '<g transform="scale(0.82)"><use href="#woza-rose-50" stroke="#1C1530" stroke-width="0.5" fill="none"/></g>' +
+      '<g transform="scale(0.64)"><use href="#woza-rose-42" stroke="#1C1530" stroke-width="0.5" fill="none"/></g>' +
+      "</svg>";
   </script>
 </body>
 </html>
