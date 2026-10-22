@@ -287,6 +287,7 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
         page.click('#screenRewards button[data-rtab="benefits"]')
         page.wait_for_selector("text=Your Gold tier", timeout=10_000)
         page.wait_for_selector("#rewardsPanel >> text=shared with the credit bureau", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=Priority access to partner offers", timeout=10_000)
 
     run_step(results, key("10_rewards_benefits_tab"), page, out_dir, "10_rewards_benefits_tab", benefits_tab)
 

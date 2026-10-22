@@ -653,7 +653,7 @@ def build_me_payload(user: User, db: Session) -> dict:
                 ],
                 "black_unlocks": [
                     f"{months_to_black} more on-time months for Black tier",
-                    "Highest partner lender rates",
+                    "Priority access to partner offers",
                     "Priority support and exclusive offers",
                 ],
                 "next_tier": tier.get("next") or "Black",
@@ -945,40 +945,6 @@ def reset_demo(request: Request, response: Response, db: DbDep, body: ResetBody 
     return build_me_payload(user, db)
 
 
-@app.get("/api/lender_view")
-def lender_view(db: DbDep):
-    user = db.query(User).first()
-    if not user:
-        return {"before": {}, "after": {}}
-    after = bureau_summary(user, db)
-    return {
-        "before": {
-            "headline": "Before Woza",
-            "points": [
-                "No bureau file for rent or utilities",
-                "No cross-institution payment record",
-            ],
-        },
-        "after": {
-            "headline": "With Woza",
-            "on_time_months": after["on_time_months"],
-            "bill_count": after["bill_count"],
-            "monthly_display": after["monthly_display"],
-            "status": after["status"],
-            "score": after["score"],
-            "grace_unused": after["grace_unused"],
-            "membership_tier": after["membership_tier"],
-            "months_to_black": after["months_to_black"],
-            "tier_goal_line": after["tier_goal_line"],
-            "summary": (
-                f"{after['on_time_months']} on-time months, {after['bill_count']} bills, "
-                f"{after['monthly_display']}/month, {after['membership_tier']}, "
-                f"score {after['score']}, {after['grace_unused']} grace unused"
-            ),
-        },
-    }
-
-
 @app.get("/api/health")
 def health():
     return {"ok": True, "service": "woza-rewards"}
@@ -990,11 +956,6 @@ NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html", headers=NO_CACHE)
-
-
-@app.get("/lender")
-def lender_page():
-    return FileResponse(STATIC / "lender.html")
 
 
 @app.get("/card-preview")

@@ -72,8 +72,6 @@ Then on the phone use `http://<Wi-Fi-IPv4-from-ipconfig>:8000` (e.g. `http://192
 | **First visit** | Extra second for fonts + session check | **Second visit** is faster (service worker caches the app shell). |
 | **Heavy tier card** | Brief pause after login | Card art is shared/cached now; pull latest + hard refresh once. |
 
-Lender view: append `/lender` to whichever base URL you use.
-
 ## Demo screenshots (local)
 
 With the app running on port 8000:
@@ -98,4 +96,3 @@ Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `sc
 | POST | `/api/grace` | `{ "bill_id": 1 }` |
 | POST | `/api/redeem` | `{ "option": "cash", "points": 10000 }` |
 | POST | `/api/reset` | Drop DB and reseed |
-| GET | `/api/lender_view` | Bureau before/after summary |
