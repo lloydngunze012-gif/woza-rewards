@@ -4,32 +4,35 @@ Pay today. Earn tomorrow. — Demo PWA for the FNB App of the Year Hackathon.
 
 **Disclaimer:** All data in this app is synthetic and for demonstration only.
 
-## For judges (use this link)
+## Try it
 
-**Do not use a laptop-only URL** (`127.0.0.1`) or **`http://0.0.0.0`** — those will not work on a phone.
+Open [https://woza-rewards.onrender.com](https://woza-rewards.onrender.com), enter your name, and tap **Continue**.
 
-Deploy once to **Render** (free tier) and share the **public HTTPS URL** Render gives you, for example:
+## For judges
 
-`https://woza-rewards.onrender.com`
+**Live demo:** [https://woza-rewards.onrender.com](https://woza-rewards.onrender.com)
 
-Judges open that link on any phone, tap **Try as Thandi**, and use the app. No Wi‑Fi or firewall setup required.
+Do **not** use a laptop-only URL (`127.0.0.1`) or **`http://0.0.0.0`** — those will not work on a phone. The LAN run below is for **development only**.
 
-Quick deploy:
+The instance runs on Render **Starter** (always on). No Wi‑Fi or firewall setup required.
+
+After a redeploy, **Profile → Reset demo** restores the seeded Thandi state.
+
+**Demo story:** Thandi is **Gold** with **36 on-time months** toward **Black** (48 months). Home shows a three-stop tier ladder (Silver · Gold · Black).
+
+Redeploy (if needed):
 
 1. Push this repo to GitHub.
 2. [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint** → connect the repo (uses `render.yaml`), **or** **Web Service** with:
    - **Build:** `pip install -r requirements.txt`
    - **Start:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (same as `Procfile`)
    - **Health check path:** `/api/health`
-3. Copy the live **`.onrender.com`** URL into your submission.
-
-After a cold start or redeploy, **Profile → Reset demo** restores the seeded Thandi state.
-
-**Demo story:** Thandi is **Gold** with **36 on-time months** toward **Black** (48 months). Home shows a three-stop tier ladder (Silver · Gold · Black).
+   - **Plan:** Starter
+3. Judges use **https://woza-rewards.onrender.com**.
 
 ## Demo credentials
 
-- Tap **Try as Thandi**, or enter any phone number (maps to **Thandi Mokoena**, `072 418 3390`).
+- Enter your name and tap **Continue**. The seeded demo member is **Thandi Mokoena**.
 
 ## Run locally (development)
 
@@ -48,7 +51,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 → [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-**Same Wi‑Fi as your phone (LAN demo):** must bind **`0.0.0.0`**, not `127.0.0.1`:
+**Same Wi‑Fi as your phone (LAN, development only):** judges should use the live URL above. For local device testing, bind **`0.0.0.0`**, not `127.0.0.1`:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -68,7 +71,7 @@ Then on the phone use `http://<Wi-Fi-IPv4-from-ipconfig>:8000` (e.g. `http://192
 |--------|----------------|-----|
 | **Wrong URL** | Spinner / “Cannot reach server” | Use **`http://YOUR-PC-WIFI-IP:8000`**, not `127.0.0.1`. Run **`.\run.ps1`** (binds `0.0.0.0`). |
 | **PC server asleep / not running** | Long wait, then error | Start **`.\run.ps1`** and keep the PC awake on Wi‑Fi. |
-| **Render free tier** | 30–60s first load after idle | Use **HTTPS Render URL** for judges; expect cold starts. |
+| **Render URL** | App does not load on a phone | Use **https://woza-rewards.onrender.com**, not localhost or a LAN IP. |
 | **First visit** | Extra second for fonts + session check | **Second visit** is faster (service worker caches the app shell). |
 | **Heavy tier card** | Brief pause after login | Card art is shared/cached now; pull latest + hard refresh once. |
 
