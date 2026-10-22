@@ -3,17 +3,24 @@
 
 from __future__ import annotations
 
+import shutil
 import sys
 import zipfile
 from pathlib import Path
+from typing import Callable
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Page, sync_playwright
 
 BASE_URL = "http://127.0.0.1:8000"
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "screenshots"
 ZIP_PATH = ROOT / "screenshots.zip"
+
+VIEWPORTS: list[tuple[int, int, str]] = [
+    (390, 844, "390"),
+    (360, 800, "360"),
+]
 
 IPHONE_14_UA = (
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
@@ -21,19 +28,40 @@ IPHONE_14_UA = (
 )
 
 ANIMATION_MS = 850
+DEMO_NAME = "Thandi"
 
 
-def close_sheets(page) -> None:
-    if page.locator("#sheet.open").count():
-        page.locator("#sheetBackdrop").click(force=True)
-        page.wait_for_timeout(250)
+def prepare_output_dir() -> None:
+    """Drop prior captures and zip so this run is the only artifact set."""
+    if OUT_DIR.exists():
+        shutil.rmtree(OUT_DIR)
+    OUT_DIR.mkdir(parents=True)
+    if ZIP_PATH.exists():
+        ZIP_PATH.unlink()
 
 
-def js_click(page, element_id: str) -> None:
+def close_sheets(page: Page) -> None:
+    page.evaluate(
+        """() => {
+          document.getElementById("sheet")?.classList.remove("open");
+          document.getElementById("sheetBackdrop")?.classList.remove("open");
+        }"""
+    )
+    page.wait_for_timeout(150)
+
+
+def js_click(page: Page, element_id: str) -> None:
     page.evaluate("(id) => document.getElementById(id)?.click()", element_id)
 
 
-def wait_settled(page) -> None:
+def sign_in(page: Page, name: str = DEMO_NAME) -> None:
+    page.wait_for_selector("#displayName", timeout=10_000)
+    page.locator("#displayName").fill(name)
+    page.locator("#loginBtn").click(force=True)
+    page.wait_for_selector("#appView:not(.hidden)", timeout=15_000)
+
+
+def wait_settled(page: Page) -> None:
     try:
         page.wait_for_load_state("networkidle", timeout=8_000)
     except PlaywrightTimeout:
@@ -41,181 +69,378 @@ def wait_settled(page) -> None:
     page.wait_for_timeout(400)
 
 
-def snap(page, filename: str, *, full_page: bool = True) -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{filename}.png"
+def assert_no_horizontal_overflow(page: Page) -> None:
+    metrics = page.evaluate(
+        """() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+        })"""
+    )
+    if metrics["scrollWidth"] > metrics["innerWidth"]:
+        raise RuntimeError(
+            f"horizontal overflow: scrollWidth={metrics['scrollWidth']} "
+            f"> innerWidth={metrics['innerWidth']}"
+        )
+
+
+def snap(page: Page, out_dir: Path, filename: str, *, full_page: bool = True) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{filename}.png"
     page.screenshot(path=str(path), full_page=full_page)
 
 
 def run_step(
     results: dict[str, str],
-    step_id: str,
-    page,
+    step_key: str,
+    page: Page,
+    out_dir: Path,
     filename: str,
-    action=None,
+    action: Callable[[], None] | None = None,
     *,
-    full_page: bool = True,
+    full_page: bool = False,
 ) -> None:
     try:
         if action:
             action()
         wait_settled(page)
-        snap(page, filename, full_page=full_page)
-        results[step_id] = "pass"
-        print(f"  OK  {step_id} -> {filename}.png")
+        assert_no_horizontal_overflow(page)
+        snap(page, out_dir, filename, full_page=full_page)
+        results[step_key] = "pass"
+        print(f"  OK  {step_key} -> {out_dir.name}/{filename}.png")
     except Exception as exc:
         try:
             wait_settled(page)
-            snap(page, filename, full_page=full_page)
+            snap(page, out_dir, filename, full_page=full_page)
         except Exception:
             pass
-        results[step_id] = f"fail: {exc}"
-        print(f"  FAIL {step_id}: {exc} (saved {filename}.png anyway)")
+        results[step_key] = f"fail: {exc}"
+        print(f"  FAIL {step_key}: {exc} (saved {out_dir.name}/{filename}.png anyway)")
+
+
+def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: str) -> None:
+    def key(step_id: str) -> str:
+        return f"{prefix}/{step_id}"
+
+    run_step(
+        results,
+        key("01_login"),
+        page,
+        out_dir,
+        "01_login",
+        lambda: (
+            page.goto(BASE_URL, wait_until="domcontentloaded"),
+            page.wait_for_selector(".login-mark", timeout=10_000),
+            page.wait_for_selector("#displayName", timeout=10_000),
+            page.wait_for_selector("label[for='displayName']", timeout=10_000),
+        )[0],
+    )
+
+    def login_demo() -> None:
+        close_sheets(page)
+        page.goto(BASE_URL, wait_until="domcontentloaded")
+        page.wait_for_selector("#loginView", timeout=10_000)
+        sign_in(page)
+        page.wait_for_selector(".mem-points", timeout=15_000)
+        page.wait_for_selector("text=12 months to Black", timeout=10_000)
+        page.wait_for_selector("#screenHome .home-greeting", timeout=10_000)
+        page.wait_for_selector("#screenHome .home-slogan", timeout=10_000)
+        page.wait_for_selector("#screenHome >> text=Pay today. Earn tomorrow.", timeout=10_000)
+        page.wait_for_selector("#screenHome .mem-tier:has-text('Gold')", timeout=10_000)
+        page.wait_for_selector("text=You: 36 months", timeout=10_000)
+        page.wait_for_selector("text=Add a bill", timeout=10_000)
+        page.wait_for_timeout(2_000)
+
+    run_step(results, key("02_home"), page, out_dir, "02_home", login_demo, full_page=True)
+
+    def open_payments() -> None:
+        close_sheets(page)
+        page.click('nav#tabNav button[data-tab="payments"]')
+        page.wait_for_selector("#screenPayments:not(.hidden)", timeout=10_000)
+        page.wait_for_selector("#screenPayments button:has-text('Pay')", timeout=10_000)
+        page.wait_for_selector("#screenPayments >> text=You pay R5 875", timeout=10_000)
+        page.wait_for_selector("#screenPayments >> text=R6 000 in bills", timeout=10_000)
+        page.wait_for_selector("#screenPayments >> text=Earns 6 000 pts", timeout=10_000)
+        page.wait_for_selector("#screenPayments >> text=Add a bill", timeout=10_000)
+
+    run_step(results, key("03_payments"), page, out_dir, "03_payments", open_payments, full_page=True)
+
+    def open_pay_sheet() -> None:
+        open_payments()
+        page.locator("#screenPayments button:has-text('Pay')").first.click()
+        page.wait_for_selector("#sheet.open", timeout=10_000)
+        page.wait_for_selector("#confirmPay", timeout=10_000)
+        page.wait_for_selector("#sheet >> text=You pay R4 375", timeout=10_000)
+        page.wait_for_selector("#sheet >> text=worth up to R67.50 off rent", timeout=10_000)
+
+    run_step(results, key("04_pay_sheet"), page, out_dir, "04_pay_sheet", open_pay_sheet, full_page=False)
+
+    def pay_success() -> None:
+        open_pay_sheet()
+        with page.expect_response(lambda r: "/api/pay" in r.url and r.request.method == "POST"):
+            js_click(page, "confirmPay")
+        page.wait_for_function(
+            "() => document.querySelector('#sheetBody h3')?.textContent === 'Rent paid'",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(400)
+        js_click(page, "donePay")
+        page.wait_for_function(
+            "() => !document.getElementById('sheet')?.classList.contains('open')",
+            timeout=10_000,
+        )
+
+    run_step(results, key("05_pay_success"), page, out_dir, "05_pay_success", pay_success, full_page=False)
+
+    def home_after_pay() -> None:
+        close_sheets(page)
+        if page.locator("#donePay").count():
+            js_click(page, "donePay")
+            page.wait_for_timeout(200)
+        page.click('nav#tabNav button[data-tab="home"]')
+        page.wait_for_selector("#screenHome:not(.hidden)", timeout=10_000)
+        page.wait_for_timeout(ANIMATION_MS)
+
+    run_step(
+        results, key("06_home_after_pay"), page, out_dir, "06_home_after_pay", home_after_pay, full_page=False
+    )
+
+    def restore_start() -> None:
+        close_sheets(page)
+        reset_resp = page.request.post(
+            f"{BASE_URL}/api/reset",
+            data='{"name": "Thandi"}',
+            headers={"Content-Type": "application/json"},
+            timeout=15_000,
+        )
+        if not reset_resp.ok:
+            raise RuntimeError(f"reset demo returned {reset_resp.status}")
+        page.goto(BASE_URL, wait_until="domcontentloaded")
+        try:
+            page.wait_for_selector("#appView:not(.hidden)", timeout=8_000)
+        except PlaywrightTimeout:
+            sign_in(page)
+
+    def open_rewards() -> None:
+        close_sheets(page)
+        page.click('nav#tabNav button[data-tab="rewards"]')
+        page.wait_for_selector("#screenRewards:not(.hidden)", timeout=10_000)
+
+    def open_rewards_redeem() -> None:
+        restore_start()
+        open_rewards()
+        page.wait_for_selector("#screenRewards [data-membership-card]", timeout=10_000)
+        page.wait_for_selector("#screenRewards .mem-points", timeout=10_000)
+        page.wait_for_selector("#screenRewards >> text=12 000", timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="rent"]', timeout=10_000)
+        page.wait_for_selector("text=Towards next rent", timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="electricity"]', timeout=10_000)
+        page.wait_for_selector("text=Prepaid electricity", timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="data"]', timeout=10_000)
+        page.wait_for_selector("text=Data and airtime", timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="fuel"]', timeout=10_000)
+        page.wait_for_selector("text=Fuel", timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="groceries"]', timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="ebucks"]', timeout=10_000)
+        page.wait_for_selector('#rewardsPanel button[data-opt="cash"]', timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R180 off rent", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R180 of electricity, about 55 units", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R120 of data, about 2 GB", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R120 of fuel, about 5 litres", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R120 at partner stores", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R120 in eBucks", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=R60 to your account", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=1.5c per point", timeout=10_000)
+        if page.locator('#rewardsPanel button[data-opt="flights"]').count():
+            raise RuntimeError("Flights should be removed from redeem")
+
+    run_step(results, key("07_rewards"), page, out_dir, "07_rewards", open_rewards_redeem, full_page=True)
+
+    def open_redeem_sheet() -> None:
+        open_rewards_redeem()
+        page.locator('#rewardsPanel button[data-opt="rent"]').click()
+        page.wait_for_selector("#sheet.open", timeout=10_000)
+        page.wait_for_selector("#confirmRedeem", timeout=10_000)
+        page.wait_for_selector("#sheet >> text=All", timeout=10_000)
+        page.wait_for_selector("#sheet >> text=Half", timeout=10_000)
+        page.wait_for_selector("#sheet >> text=R180 off rent", timeout=10_000)
+
+    run_step(results, key("08_redeem_sheet"), page, out_dir, "08_redeem_sheet", open_redeem_sheet, full_page=False)
+
+    def redeem_success() -> None:
+        open_redeem_sheet()
+        js_click(page, "confirmRedeem")
+        page.wait_for_selector("text=Redeemed", timeout=15_000)
+        page.wait_for_selector("text=added to Woza cash", timeout=10_000)
+        js_click(page, "doneR")
+        page.wait_for_function(
+            "() => !document.getElementById('sheet')?.classList.contains('open')",
+            timeout=10_000,
+        )
+
+    run_step(results, key("09_redeem_success"), page, out_dir, "09_redeem_success", redeem_success, full_page=False)
+
+    def benefits_tab() -> None:
+        open_rewards()
+        if page.locator("#doneR").count():
+            js_click(page, "doneR")
+            page.wait_for_timeout(200)
+        page.click('#screenRewards button[data-rtab="benefits"]')
+        page.wait_for_selector("text=Your Gold tier", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel >> text=shared with the credit bureau", timeout=10_000)
+
+    run_step(results, key("10_rewards_benefits_tab"), page, out_dir, "10_rewards_benefits_tab", benefits_tab)
+
+    def progress_tab() -> None:
+        open_rewards()
+        page.click('#screenRewards button[data-rtab="progress"]')
+        page.wait_for_selector("text=Last 12 months", timeout=10_000)
+        page.wait_for_selector("#rewardsPanel .cal-grid", timeout=10_000)
+        page.wait_for_selector("text=36 months on time", timeout=10_000)
+
+    run_step(results, key("11_rewards_progress_tab"), page, out_dir, "11_rewards_progress_tab", progress_tab)
+
+    def profile_tab() -> None:
+        close_sheets(page)
+        page.click('nav#tabNav button[data-tab="profile"]')
+        page.wait_for_selector("#screenProfile:not(.hidden)", timeout=10_000)
+        page.locator("#linkedBankBtn").wait_for(state="attached", timeout=10_000)
+        page.wait_for_selector("#signOutBtn", timeout=10_000)
+        page.wait_for_selector("#resetBtn", timeout=10_000)
+
+    run_step(results, key("12_profile"), page, out_dir, "12_profile", profile_tab)
+
+    def card_preview() -> None:
+        close_sheets(page)
+        page.goto(f"{BASE_URL}/card-preview", wait_until="domcontentloaded")
+        page.wait_for_selector(".card-preview-stack [data-membership-card]", timeout=10_000)
+        page.wait_for_selector(".membership-card.tier-gold", timeout=10_000)
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        page.wait_for_timeout(500)
+
+    run_step(results, key("13_card_preview"), page, out_dir, "13_card_preview", card_preview, full_page=False)
+
+    def card_back() -> None:
+        close_sheets(page)
+        page.goto(BASE_URL, wait_until="domcontentloaded")
+        # boot() may restore the session; do not wait on a hidden login field.
+        try:
+            page.wait_for_selector("#appView:not(.hidden)", timeout=8_000)
+        except PlaywrightTimeout:
+            sign_in(page)
+        page.wait_for_selector("#screenHome [data-card-flip]", timeout=10_000)
+        page.evaluate("document.querySelector('#screenHome [data-card-flip]')?.click()")
+        page.wait_for_timeout(700)
+        page.wait_for_selector("#screenHome .card-flip.is-flipped", timeout=5_000)
+
+    run_step(results, key("15_card_back"), page, out_dir, "15_card_back", card_back, full_page=False)
+
+
+def run_desktop_step(page: Page, results: dict[str, str]) -> None:
+    out_dir = OUT_DIR / "1280"
+
+    def desktop_home() -> None:
+        page.goto(BASE_URL, wait_until="domcontentloaded")
+        page.wait_for_selector("#loginView", timeout=10_000)
+        page.wait_for_selector(".desk-aside", timeout=10_000)
+        page.wait_for_selector(".phone-frame", timeout=10_000)
+        sign_in(page)
+        page.wait_for_selector("#screenHome .home-greeting", timeout=10_000)
+        page.wait_for_selector("#screenHome .home-slogan", timeout=10_000)
+        page.wait_for_selector("text=Pay today. Earn tomorrow.", timeout=10_000)
+        page.wait_for_selector("text=Demo: type your name and continue", timeout=10_000)
+        page.wait_for_timeout(2_000)
+        page.wait_for_function(
+            """() => {
+              const aside = document.querySelector(".desk-aside");
+              return aside && getComputedStyle(aside).display !== "none";
+            }""",
+            timeout=10_000,
+        )
+
+    run_step(
+        results,
+        "1280/14_desktop_1280",
+        page,
+        out_dir,
+        "14_desktop_1280",
+        desktop_home,
+        full_page=False,
+    )
 
 
 def main() -> int:
     results: dict[str, str] = {}
     print("Starting Woza screenshot run...", flush=True)
+    prepare_output_dir()
+    print(f"Cleared {OUT_DIR.relative_to(ROOT)} (fresh run only)", flush=True)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            device_scale_factor=3,
-            user_agent=IPHONE_14_UA,
-            is_mobile=True,
-            has_touch=True,
+
+        for width, height, label in VIEWPORTS:
+            print(f"\n--- Viewport {width}x{height} -> screenshots/{label}/ ---", flush=True)
+            context = browser.new_context(
+                viewport={"width": width, "height": height},
+                device_scale_factor=3,
+                user_agent=IPHONE_14_UA,
+                is_mobile=True,
+                has_touch=True,
+            )
+            reset_resp = context.request.post(f"{BASE_URL}/api/reset", timeout=15_000)
+            if not reset_resp.ok:
+                print(f"Warning: reset demo returned {reset_resp.status}", file=sys.stderr)
+            context.clear_cookies()
+
+            page = context.new_page()
+            page.set_default_navigation_timeout(20_000)
+            page.set_default_timeout(15_000)
+
+            out_dir = OUT_DIR / label
+            run_all_steps(page, out_dir, results, label)
+
+            context.close()
+
+        print("\n--- Viewport 1280x800 -> screenshots/1280/ ---", flush=True)
+        desktop_ctx = browser.new_context(
+            viewport={"width": 1280, "height": 800},
+            device_scale_factor=2,
+            is_mobile=False,
+            has_touch=False,
         )
-        request = context.request
-        reset_resp = request.post(f"{BASE_URL}/api/reset", timeout=15_000)
+        reset_resp = desktop_ctx.request.post(f"{BASE_URL}/api/reset", timeout=15_000)
         if not reset_resp.ok:
             print(f"Warning: reset demo returned {reset_resp.status}", file=sys.stderr)
-        context.clear_cookies()
-
-        page = context.new_page()
-        page.set_default_navigation_timeout(20_000)
-        page.set_default_timeout(15_000)
-
-        run_step(
-            results,
-            "01_login",
-            page,
-            "01_login",
-            lambda: page.goto(BASE_URL, wait_until="domcontentloaded"),
-        )
-
-        def login_demo() -> None:
-            close_sheets(page)
-            page.goto(BASE_URL, wait_until="domcontentloaded")
-            page.wait_for_selector("#loginView", timeout=10_000)
-            page.locator("#demoBtn").click(force=True)
-            page.wait_for_selector("#appView:not(.hidden)", timeout=15_000)
-            page.wait_for_selector("#memPoints", timeout=15_000)
-
-        run_step(results, "02_home", page, "02_home", login_demo, full_page=True)
-
-        def open_payments() -> None:
-            close_sheets(page)
-            page.click('nav#tabNav button[data-tab="payments"]')
-            page.wait_for_selector("#screenPayments:not(.hidden)", timeout=10_000)
-            page.wait_for_selector("#screenPayments button:has-text('Pay')", timeout=10_000)
-
-        run_step(results, "03_payments", page, "03_payments", open_payments)
-
-        def open_pay_sheet() -> None:
-            open_payments()
-            page.locator("#screenPayments button:has-text('Pay')").first.click()
-            page.wait_for_selector("#sheet.open", timeout=10_000)
-            page.wait_for_selector("#confirmPay", timeout=10_000)
-
-        run_step(results, "04_pay_sheet", page, "04_pay_sheet", open_pay_sheet, full_page=False)
-
-        def pay_success() -> None:
-            open_pay_sheet()
-            with page.expect_response(lambda r: "/api/pay" in r.url and r.request.method == "POST"):
-                js_click(page, "confirmPay")
-            page.wait_for_function(
-                "() => document.querySelector('#sheetBody h3')?.textContent === 'Paid'",
-                timeout=15_000,
-            )
-            page.wait_for_timeout(400)
-
-        run_step(results, "05_pay_success", page, "05_pay_success", pay_success, full_page=False)
-
-        def home_after_pay() -> None:
-            close_sheets(page)
-            if page.locator("#donePay").count():
-                js_click(page, "donePay")
-                page.wait_for_timeout(200)
-            page.click('nav#tabNav button[data-tab="home"]')
-            page.wait_for_selector("#screenHome:not(.hidden)", timeout=10_000)
-            page.wait_for_timeout(ANIMATION_MS)
-
-        run_step(results, "06_home_after_pay", page, "06_home_after_pay", home_after_pay, full_page=True)
-
-        def open_rewards() -> None:
-            close_sheets(page)
-            page.click('nav#tabNav button[data-tab="rewards"]')
-            page.wait_for_selector("#screenRewards:not(.hidden)", timeout=10_000)
-
-        run_step(results, "07_rewards", page, "07_rewards", open_rewards)
-
-        def open_redeem_sheet() -> None:
-            open_rewards()
-            page.locator('#rewardsPanel button[data-opt="rent"]').click()
-            page.wait_for_selector("#sheet.open", timeout=10_000)
-            page.wait_for_selector("#confirmRedeem", timeout=10_000)
-
-        run_step(results, "08_redeem_sheet", page, "08_redeem_sheet", open_redeem_sheet, full_page=False)
-
-        def redeem_success() -> None:
-            open_redeem_sheet()
-            js_click(page, "confirmRedeem")
-            page.wait_for_selector("text=Redeemed", timeout=15_000)
-
-        run_step(results, "09_redeem_success", page, "09_redeem_success", redeem_success, full_page=False)
-
-        def benefits_tab() -> None:
-            open_rewards()
-            if page.locator("#doneR").count():
-                js_click(page, "doneR")
-                page.wait_for_timeout(200)
-            page.click('#screenRewards button[data-rtab="benefits"]')
-            page.wait_for_selector("text=Your Silver tier", timeout=10_000)
-
-        run_step(results, "10_rewards_benefits_tab", page, "10_rewards_benefits_tab", benefits_tab)
-
-        def progress_tab() -> None:
-            open_rewards()
-            page.click('#screenRewards button[data-rtab="progress"]')
-            page.wait_for_selector("#rewardsPanel .timeline", timeout=10_000)
-
-        run_step(results, "11_rewards_progress_tab", page, "11_rewards_progress_tab", progress_tab)
-
-        def profile_tab() -> None:
-            close_sheets(page)
-            page.click('nav#tabNav button[data-tab="profile"]')
-            page.wait_for_selector("#screenProfile:not(.hidden)", timeout=10_000)
-            page.locator("#linkedBankBtn").wait_for(state="attached", timeout=10_000)
-
-        run_step(results, "12_profile", page, "12_profile", profile_tab)
+        desktop_ctx.clear_cookies()
+        desktop_page = desktop_ctx.new_page()
+        desktop_page.set_default_navigation_timeout(20_000)
+        desktop_page.set_default_timeout(15_000)
+        run_desktop_step(desktop_page, results)
+        desktop_ctx.close()
 
         browser.close()
 
     if OUT_DIR.exists():
         with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
-            for png in sorted(OUT_DIR.glob("*.png")):
-                zf.write(png, arcname=f"screenshots/{png.name}")
+            for png in sorted(OUT_DIR.rglob("*.png")):
+                rel = png.relative_to(OUT_DIR)
+                zf.write(png, arcname=f"screenshots/{rel.as_posix()}")
         print(f"\nWrote {ZIP_PATH}")
 
-    passed = sum(1 for v in results.values() if v == "pass")
-    failed = len(results) - passed
-    print(f"\nSummary: {passed} passed, {failed} failed (of {len(results)} steps)")
-    for step_id, status in results.items():
-        mark = "PASS" if status == "pass" else "FAIL"
-        print(f"  [{mark}] {step_id}" + ("" if status == "pass" else f" — {status}"))
+    for width, height, label in VIEWPORTS + [(1280, 800, "1280")]:
+        prefix = label
+        steps = [k for k in results if k.startswith(f"{prefix}/")]
+        passed = sum(1 for k in steps if results[k] == "pass")
+        failed = len(steps) - passed
+        print(f"\n{label} ({width}x{height}): {passed} passed, {failed} failed (of {len(steps)} steps)")
 
-    return 1 if failed else 0
+    passed_total = sum(1 for v in results.values() if v == "pass")
+    failed_total = len(results) - passed_total
+    print(f"\nOverall: {passed_total} passed, {failed_total} failed (of {len(results)} steps)")
+    for step_key, status in sorted(results.items()):
+        mark = "PASS" if status == "pass" else "FAIL"
+        print(f"  [{mark}] {step_key}" + ("" if status == "pass" else f" — {status}"))
+
+    return 1 if failed_total else 0
 
 
 if __name__ == "__main__":

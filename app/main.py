@@ -17,8 +17,11 @@ from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, 
 from app.seed import (
     CURRENT_PERIOD,
     DEMO_NOW,
+    DEMO_VERSION,
+    REDEMPTION_ORDER,
     REDEMPTION_RATES,
-    REDEEM_VALUE_LABELS,
+    REDEMPTION_TITLES,
+    REDEEM_UNITS_PER_RAND,
     drop_and_reseed,
     next_tier_info,
     score_label,
@@ -90,13 +93,166 @@ def fmt_rand(cents: int) -> str:
     return f"R{s}"
 
 
+def fmt_rand_cents(cents: int) -> str:
+    whole = cents // 100
+    frac = cents % 100
+    whole_s = f"{whole:,}".replace(",", " ")
+    if frac == 0:
+        return f"R{whole_s}"
+    return f"R{whole_s}.{frac:02d}"
+
+
+def redeem_value_cents(points: int, rate: float) -> int:
+    return int(points * rate)
+
+
+RENT_REDEEM_RATE = REDEMPTION_RATES["rent"]
+
+
+def worth_up_to_rent_line(points: int) -> str:
+    if points <= 0:
+        return ""
+    cents = redeem_value_cents(points, RENT_REDEEM_RATE)
+    return f"worth up to {fmt_rand_cents(cents)} off rent"
+
+
+def short_points_line(bill: Bill, pay: Payment | None = None) -> str:
+    if pay:
+        return f"+{fmt_pts_num(pay.points_awarded)} pts"
+    if bill.verification == "bank_feed":
+        return f"+{fmt_pts_num(bill.points_per_month)} pts when confirmed"
+    return f"+{fmt_pts_num(bill.points_per_month)} pts"
+
+
+def sheet_points_line(points: int) -> str:
+    line = f"+{fmt_pts_num(points)} pts"
+    worth = worth_up_to_rent_line(points)
+    return f"{line} · {worth}" if worth else line
+
+
 def fmt_rand_from_pts(option: str, points: int) -> str:
-    rate = REDEMPTION_RATES[option]
-    cents = int(points * rate)
+    return fmt_rand_cents(redeem_value_cents(points, REDEMPTION_RATES[option]))
+
+
+def about_units(rands: float, per_rand: float) -> int:
+    return int(rands * per_rand)
+
+
+def redeem_value_row(opt_id: str, points: int) -> str:
+    if points <= 0:
+        return "Earn points on your bills to unlock"
+    cents = redeem_value_cents(points, REDEMPTION_RATES[opt_id])
+    display = fmt_rand_cents(cents)
     rands = cents / 100
-    if rands == int(rands):
-        return f"R{int(rands):,}".replace(",", " ")
-    return f"R{rands:,.2f}".replace(",", " ")
+    units = REDEEM_UNITS_PER_RAND
+    if opt_id == "rent":
+        return f"{display} off rent"
+    if opt_id == "electricity":
+        n = about_units(rands, units["electricity"])
+        return f"{display} of electricity, about {n} units"
+    if opt_id == "data":
+        n = about_units(rands, units["data"])
+        return f"{display} of data, about {n} GB"
+    if opt_id == "fuel":
+        n = about_units(rands, units["fuel"])
+        return f"{display} of fuel, about {n} litres"
+    if opt_id == "groceries":
+        return f"{display} at partner stores"
+    if opt_id == "ebucks":
+        return f"{display} in eBucks"
+    if opt_id == "cash":
+        return f"{display} to your account"
+    return display
+
+
+def period_add_month(period: str) -> str:
+    y, m = map(int, period.split("-"))
+    m += 1
+    if m > 12:
+        m = 1
+        y += 1
+    return f"{y:04d}-{m:02d}"
+
+
+def period_sub_month(period: str) -> str:
+    y, m = map(int, period.split("-"))
+    m -= 1
+    if m < 1:
+        m = 12
+        y -= 1
+    return f"{y:04d}-{m:02d}"
+
+
+def periods_ending(end_period: str, count: int) -> list[str]:
+    cur = end_period
+    out: list[str] = []
+    for _ in range(count):
+        out.append(cur)
+        cur = period_sub_month(cur)
+    return list(reversed(out))
+
+
+MONTH_SHORT = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+
+def period_due_short(period: str) -> str:
+    y, m = map(int, period.split("-"))
+    return f"1 {MONTH_SHORT[m - 1]}"
+
+
+def next_unpaid_rent_period(bills: list[Bill]) -> str:
+    rent = next((b for b in bills if b.category == "rent"), None)
+    if not rent:
+        return CURRENT_PERIOD
+    period = CURRENT_PERIOD
+    for _ in range(36):
+        if payment_for_period(rent, period) is None:
+            return period
+        period = period_add_month(period)
+    return period
+
+
+def woza_cash_rent_subline(bills: list[Bill]) -> str:
+    label = period_due_short(next_unpaid_rent_period(bills))
+    return f"For your {label} rent"
+
+
+def rent_woza_cash_apply(
+    user: User, bills: list[Bill], period: str = CURRENT_PERIOD
+) -> int:
+    rent = next((b for b in bills if b.category == "rent"), None)
+    if not rent or rent.verification != "through_woza":
+        return 0
+    if payment_for_period(rent, period):
+        return 0
+    return min(user.woza_cash_cents, rent.amount_cents)
+
+
+def woza_cash_amount_lines(amount_cents: int, woza_applied: int) -> dict:
+    if woza_applied <= 0:
+        return {}
+    you_pay_cents = amount_cents - woza_applied
+    return {
+        "woza_cash_applied_cents": woza_applied,
+        "amount_breakdown_line": (
+            f"{fmt_rand(amount_cents)} - {fmt_rand_cents(woza_applied)} Woza cash"
+        ),
+        "you_pay_line": f"You pay {fmt_rand(you_pay_cents)}",
+        "you_pay_cents": you_pay_cents,
+    }
 
 
 def demo_now() -> datetime:
@@ -153,11 +309,14 @@ def format_rate(rate: float) -> str:
     return f"{rate} cents per point"
 
 
-def home_points_line(bill: Bill) -> str:
-    pts = fmt_pts_num(bill.points_per_month)
-    if bill.verification == "bank_feed":
-        return f"+{pts} pts when your bank confirms"
-    return f"+{pts} pts"
+def format_rate_short(rate: float) -> str:
+    if rate == 1.0:
+        return "1c per point"
+    if rate == 1.5:
+        return "1.5c per point"
+    if rate == 0.5:
+        return "0.5c per point"
+    return f"{rate}c per point"
 
 
 def home_bill_badge(
@@ -167,13 +326,27 @@ def home_bill_badge(
     if bill.verification == "bank_feed":
         if not bank_consent_active:
             return "Not verified"
-        return "Bank debit order, 1 Nov"
+        return ""
     if pay:
         return "Paid"
     return "Due 1 Nov"
 
 
-def bill_state(bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active: bool = True) -> dict:
+def bank_debit_subline(
+    bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active: bool = True
+) -> str | None:
+    if bill.verification != "bank_feed" or not bank_consent_active:
+        return None
+    return "Bank debit order, 1 Nov"
+
+
+def bill_state(
+    bill: Bill,
+    period: str = CURRENT_PERIOD,
+    *,
+    bank_consent_active: bool = True,
+    woza_cash_applied_cents: int = 0,
+) -> dict:
     pay = payment_for_period(bill, period)
     grace = grace_for_period(bill, period)
     potential = bill.points_per_month
@@ -185,9 +358,28 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active:
         verify_label = "Verified: Debit order read"
     else:
         verify_label = "Verified: Paid through Woza"
-    points_line = home_points_line(bill)
-    if pay:
-        points_line = f"+{fmt_pts_num(pay.points_awarded)} pts"
+    woza_applied = (
+        woza_cash_applied_cents
+        if (not pay and woza_cash_applied_cents > 0 and bill.category == "rent")
+        else 0
+    )
+    net_cents = bill.amount_cents - woza_applied
+    if bill.verification == "bank_feed":
+        status_home = status_pay = "Not verified" if not bank_consent_active else "Debit order 1 Nov"
+    elif pay:
+        status_home = status_pay = "Paid"
+    else:
+        status_home = "Due 1 Nov"
+        status_pay = "due 1 Nov"
+    row_points = short_points_line(bill, pay)
+    if woza_applied:
+        pay_sheet_detail = (
+            f"{bill.name} {fmt_rand(bill.amount_cents)}, "
+            f"Woza cash −{fmt_rand_cents(woza_applied)}, "
+            f"You pay {fmt_rand(net_cents)}"
+        )
+    else:
+        pay_sheet_detail = f"{bill.name} {fmt_rand(bill.amount_cents)}"
     state = {
         "id": bill.id,
         "name": bill.name,
@@ -208,10 +400,22 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active:
         "payable_through_woza": is_woza and pay is None and grace is None,
         "month_line": month_activity_line(bill, period),
         "home_badge": home_bill_badge(bill, period, bank_consent_active=bank_consent_active),
-        "pay_sheet_title": f"Pay {fmt_rand(bill.amount_cents)} {bill.name.lower()} through Woza",
-        "home_points_line": home_points_line(bill),
-        "payment_due_line": f"{fmt_rand(bill.amount_cents)} · due 1 Nov",
-        "points_line": points_line,
+        "debit_subline": bank_debit_subline(
+            bill, period, bank_consent_active=bank_consent_active
+        ),
+        "pay_sheet_title": f"Pay {bill.name.lower()} through Woza",
+        "row_amount_home": f"{fmt_rand(net_cents)} · {status_home}",
+        "row_amount_pay": f"{fmt_rand(net_cents)} · {status_pay}",
+        "row_status_home": status_home,
+        "row_status_pay": status_pay,
+        "row_was_display": fmt_rand(bill.amount_cents) if woza_applied else None,
+        "row_now_display": fmt_rand(net_cents) if woza_applied else None,
+        "home_points_line": row_points,
+        "payment_due_line": f"{fmt_rand(net_cents)} · {status_pay}",
+        "pay_sheet_detail": pay_sheet_detail,
+        "pay_sheet_points_line": sheet_points_line(pay.points_awarded if pay else potential),
+        "pay_sheet_subline": "1 point per rand on time",
+        "points_line": row_points,
         "verify_label": verify_label,
         "car_verified": car_verified,
     }
@@ -219,6 +423,8 @@ def bill_state(bill: Bill, period: str = CURRENT_PERIOD, *, bank_consent_active:
         state["status_line"] = f"+{fmt_pts_num(pay.points_awarded)} pts"
     elif grace:
         state["status_line"] = "Grace month used · no penalty · streak held"
+    if woza_applied:
+        state.update(woza_cash_amount_lines(bill.amount_cents, woza_applied))
     return state
 
 
@@ -238,7 +444,16 @@ def build_me_payload(user: User, db: Session) -> dict:
         .all()
     )
     period = CURRENT_PERIOD
-    bill_rows = [bill_state(b, period, bank_consent_active=user.bank_consent_active) for b in bills]
+    woza_apply_rent = rent_woza_cash_apply(user, bills, period)
+    bill_rows = [
+        bill_state(
+            b,
+            period,
+            bank_consent_active=user.bank_consent_active,
+            woza_cash_applied_cents=woza_apply_rent if b.category == "rent" else 0,
+        )
+        for b in bills
+    ]
     tier = next_tier_info(user.months_on_time)
     status = status_for_months(user.months_on_time)
     grace_used = db.query(GraceUse).join(Bill).filter(Bill.user_id == user.id).count()
@@ -268,44 +483,73 @@ def build_me_payload(user: User, db: Session) -> dict:
 
     progress_payments = []
     for b in bills:
-        periods = sorted({p.period for p in b.payments})
+        months = []
+        for month_period in periods_ending(CURRENT_PERIOD, 12):
+            y, m = map(int, month_period.split("-"))
+            pay = payment_for_period(b, month_period)
+            grace = grace_for_period(b, month_period)
+            if pay:
+                month_status, mark = "paid", "✓"
+            elif grace:
+                month_status, mark = "grace", "G"
+            elif month_period == CURRENT_PERIOD:
+                month_status, mark = "due", "·"
+            else:
+                month_status, mark = "missed", "–"
+            months.append(
+                {
+                    "period": month_period,
+                    "label": MONTH_SHORT[m - 1],
+                    "year": y,
+                    "status": month_status,
+                    "mark": mark,
+                }
+            )
         progress_payments.append(
             {
                 "bill_name": b.name,
+                "category": b.category,
                 "months_on_time": b.months_on_time,
-                "periods": periods[-12:],
+                "months": months,
+                "periods": [x["period"] for x in months if x["status"] == "paid"],
             }
         )
 
     redemption_options = []
-    for opt_id, rate in REDEMPTION_RATES.items():
-        titles = {
-            "rent": "Towards next rent",
-            "ebucks": "eBucks",
-            "airtime": "Airtime",
-            "cash": "Cash out to bank",
-        }
-        examples = {
-            "rent": "100 000 pts = R1 500",
-            "ebucks": "100 000 pts = R1 000",
-            "airtime": "100 000 pts = R1 000",
-            "cash": "100 000 pts = R500",
-        }
-        val = fmt_rand_from_pts(opt_id, user.points)
-        suffix = REDEEM_VALUE_LABELS[opt_id]
+    for opt_id in REDEMPTION_ORDER:
+        rate = REDEMPTION_RATES[opt_id]
+        value_cents = redeem_value_cents(user.points, rate) if user.points > 0 else 0
+        value_display = fmt_rand_cents(value_cents) if user.points > 0 else None
         redemption_options.append(
             {
                 "id": opt_id,
-                "title": titles[opt_id],
+                "title": REDEMPTION_TITLES[opt_id],
                 "rate": format_rate(rate),
-                "example": examples[opt_id],
-                "your_value_line": f"Your {fmt_pts_num(user.points)} pts = {val} {suffix}",
+                "rate_short": format_rate_short(rate),
+                "rate_multiplier": rate,
+                "value_cents": value_cents,
+                "value_display": value_display,
+                "value_row": redeem_value_row(opt_id, user.points),
             }
         )
 
-    months_to_gold = max(0, 24 - user.months_on_time) if user.months_on_time < 24 else 0
-    gold_progress_label = f"{user.months_on_time} of 24 on-time months"
-    gold_progress_pct = min(100, int(user.months_on_time / 24 * 100)) if user.months_on_time < 24 else 100
+    tier_max = 48
+    mot = user.months_on_time
+    months_to_black = max(0, tier_max - mot)
+    fill_pct = min(100, int(mot / tier_max * 100))
+    tier_ladder = {
+        "months": mot,
+        "max_months": tier_max,
+        "fill_pct": fill_pct,
+        "marker_pct": fill_pct,
+        "marker_label": f"You: {mot} months",
+        "caption_line": f"{months_to_black} months to Black",
+        "stops": [
+            {"tier": "Silver", "months": 12, "pct": 25, "reached": mot >= 12},
+            {"tier": "Gold", "months": 24, "pct": 50, "reached": mot >= 24},
+            {"tier": "Black", "months": 48, "pct": 100, "reached": mot >= 48},
+        ],
+    }
 
     return {
         "user": {
@@ -316,8 +560,8 @@ def build_me_payload(user: User, db: Session) -> dict:
             "months_on_time": user.months_on_time,
             "score": 742,
             "score_label": score_label(742),
-            "score_caption": "Not your credit bureau score",
-            "initials": "TM",
+            "score_caption": "Not a credit score",
+            "initials": initials_for(user.name),
             "linked_bank": {
                 "label": "FNB Cheque ••4821",
                 "consent_until": "Consent active until Oct 2027",
@@ -330,13 +574,15 @@ def build_me_payload(user: User, db: Session) -> dict:
             "lifetime_points": user.lifetime_points,
             "lifetime_display": fmt_pts(user.lifetime_points),
             "woza_cash_cents": user.woza_cash_cents,
-            "woza_cash_display": fmt_rand(user.woza_cash_cents),
-            "woza_cash_subline": "From redeemed points - applied to your next Woza bill",
+            "woza_cash_display": fmt_rand_cents(user.woza_cash_cents),
+            "woza_cash_subline": woza_cash_rent_subline(bills),
             "grace_months": user.grace_months,
             "grace_months_earned": user.grace_months_earned,
             "grace_months_used": grace_used,
             "member_since": "Oct 2023",
             "tier_progress": tier,
+            "next_tier": tier.get("next") or "Black",
+            "months_to_next_tier": tier.get("months_needed", months_to_black),
         },
         "meta": {
             "current_period": period,
@@ -344,10 +590,8 @@ def build_me_payload(user: User, db: Session) -> dict:
             "demo_now": demo_now().isoformat(),
         },
         "home": {
-            "greeting": f"Good morning, {user.name.split()[0]}",
-            "months_to_gold_line": f"{months_to_gold} months to Gold",
-            "gold_progress_label": gold_progress_label,
-            "gold_progress_pct": gold_progress_pct,
+            "months_to_black_line": f"{months_to_black} months to Black",
+            "tier_ladder": tier_ladder,
             "bureau_line": "36 on-time months shared with the credit bureau",
             "bills_on_track": ["Rent", "Utilities", "Car finance"],
         },
@@ -355,7 +599,31 @@ def build_me_payload(user: User, db: Session) -> dict:
             "hero_title": "Due through Woza" if payable_outstanding else "Paid through Woza",
             "hero_amount": fmt_rand(due_woza_cents if payable_outstanding else paid_woza_cents),
             "hero_amount_suffix": "" if payable_outstanding else " ✓",
-            "hero_earn_line": f"Earns {fmt_pts_num(due_woza_pts)} pts" if payable_outstanding else "",
+            "hero_you_pay_line": (
+                f"You pay {fmt_rand(due_woza_cents - woza_apply_rent)}"
+                if payable_outstanding
+                else ""
+            ),
+            "hero_bills_line": (
+                (
+                    f"{fmt_rand(due_woza_cents)} in bills · "
+                    f"{fmt_rand_cents(woza_apply_rent)} Woza cash applied"
+                    if woza_apply_rent
+                    else f"{fmt_rand(due_woza_cents)} in bills"
+                )
+                if payable_outstanding
+                else ""
+            ),
+            **(
+                woza_cash_amount_lines(due_woza_cents, woza_apply_rent)
+                if payable_outstanding and woza_apply_rent > 0
+                else {}
+            ),
+            "hero_earn_line": (
+                f"Earns {fmt_pts_num(due_woza_pts)} pts"
+                if payable_outstanding and due_woza_pts
+                else ""
+            ),
             "hero_grace_line": f"{user.grace_months} grace months available ({user.grace_months_earned} earned, {grace_used} used)",
             "all_woza_paid": all_woza_paid,
             "payable_outstanding": payable_outstanding,
@@ -363,11 +631,12 @@ def build_me_payload(user: User, db: Session) -> dict:
         },
         "rewards": {
             "redemption_options": redemption_options,
+            "redeem_units_per_rand": REDEEM_UNITS_PER_RAND,
             "redemptions": [
                 {
                     "option": r.option,
                     "points_spent": r.points_spent,
-                    "value_display": fmt_rand(r.value_cents),
+                    "value_display": fmt_rand_cents(r.value_cents),
                     "created_at": r.created_at.isoformat(),
                 }
                 for r in redemptions
@@ -377,23 +646,26 @@ def build_me_payload(user: User, db: Session) -> dict:
                 "grace_months_earned": user.grace_months_earned,
                 "grace_months_used": grace_used,
                 "tier": status,
-                "silver_unlocks": [
-                    "2 grace months available (3 earned, 1 used)",
-                    "Silver rate at partner lenders",
-                    "Rent and utilities reported to the bureau",
-                ],
                 "gold_unlocks": [
-                    "24 on-time months for Gold tier",
-                    "Better partner lender rates",
-                    "Higher redemption value on rent",
+                    "2 grace months available (3 earned, 1 used)",
+                    "Your on-time record, ready to share with lenders",
+                    "Rent and utilities shared with the credit bureau",
                 ],
+                "black_unlocks": [
+                    f"{months_to_black} more on-time months for Black tier",
+                    "Highest partner lender rates",
+                    "Priority support and exclusive offers",
+                ],
+                "next_tier": tier.get("next") or "Black",
+                "months_to_next_tier": months_to_black,
                 "bureau": {
                     "rent_months": 36,
-                    "utilities_months": 30,
+                    "utilities_months": 36,
                     "car_note": "Car already on file; on-time only",
                 },
             },
             "progress": progress_payments,
+            "progress_timeline_label": "Last 12 months",
         },
         "bureau_summary": bureau_summary(user, db),
     }
@@ -402,11 +674,19 @@ def build_me_payload(user: User, db: Session) -> dict:
 def bureau_summary(user: User, db: Session) -> dict:
     bills = db.query(Bill).filter(Bill.user_id == user.id).all()
     monthly = sum(b.amount_cents for b in bills)
+    membership = status_for_months(user.months_on_time)
+    months_to_black = max(0, 48 - user.months_on_time)
     return {
-        "on_time_months": 36,
+        "on_time_months": user.months_on_time,
         "bill_count": len(bills),
         "monthly_display": fmt_rand(monthly),
-        "status": status_for_months(user.months_on_time),
+        "status": membership,
+        "membership_tier": membership,
+        "tier_progress_months": user.months_on_time,
+        "months_to_black": months_to_black,
+        "tier_goal_line": f"{months_to_black} months to Black"
+        if months_to_black
+        else "Black tier reached",
         "score": 742,
         "grace_unused": user.grace_months,
     }
@@ -431,21 +711,44 @@ def pay_bill(user: User, db: Session, bill: Bill, period: str = CURRENT_PERIOD) 
         points_awarded=pts,
     )
     db.add(pay)
-    bill.months_on_time += 1
     user.lifetime_points += pts
     user.points += pts
-
-    user.status = status_for_months(user.months_on_time)
+    if bill.category == "rent" and user.woza_cash_cents > 0:
+        applied = min(user.woza_cash_cents, bill.amount_cents)
+        user.woza_cash_cents -= applied
     db.flush()
-    if all_bills_paid(user, db, period):
-        user.months_on_time += 1
-        user.status = status_for_months(user.months_on_time)
-
     return pay
 
 
 class LoginBody(BaseModel):
     phone: str = ""
+    name: str = ""
+
+
+class ResetBody(BaseModel):
+    name: str = ""
+
+
+def format_member_name(raw: str) -> str:
+    parts = [p for p in (raw or "").split() if p]
+    if not parts:
+        return ""
+    return " ".join(p[:1].upper() + p[1:] for p in parts)
+
+
+def initials_for(name: str) -> str:
+    parts = [p for p in (name or "").split() if p]
+    if not parts:
+        return "W"
+    if len(parts) == 1:
+        return parts[0][:1].upper()
+    return (parts[0][:1] + parts[-1][:1]).upper()
+
+
+def apply_member_name(user: User, raw: str) -> None:
+    name = format_member_name(raw)
+    if name:
+        user.name = name
 
 
 class PayBody(BaseModel):
@@ -461,13 +764,25 @@ class RedeemBody(BaseModel):
     points: int
 
 
-@app.post("/api/login")
-def login(body: LoginBody, response: Response, db: DbDep):
+def ensure_demo_seed(db: Session) -> None:
     user = db.query(User).first()
-    if not user:
+    if user is None or user.demo_version != DEMO_VERSION:
         drop_and_reseed()
         db.expire_all()
-        user = db.query(User).first()
+
+
+@app.post("/api/login")
+def login(body: LoginBody, response: Response, db: DbDep):
+    ensure_demo_seed(db)
+    user = db.query(User).first()
+    if not user:
+        raise HTTPException(503, "Demo database is not ready. Try again in a moment.")
+    name = format_member_name(body.name)
+    if not name:
+        raise HTTPException(400, "Enter your name")
+    apply_member_name(user, name)
+    db.commit()
+    db.refresh(user)
     sid = secrets.token_urlsafe(32)
     _sessions[sid] = user.id
     response.set_cookie(
@@ -478,6 +793,15 @@ def login(body: LoginBody, response: Response, db: DbDep):
         max_age=86400 * 7,
     )
     return {"ok": True, "name": user.name}
+
+
+@app.post("/api/logout")
+def logout(request: Request, response: Response):
+    sid = request.cookies.get(SESSION_COOKIE)
+    if sid:
+        _sessions.pop(sid, None)
+    response.delete_cookie(SESSION_COOKIE, samesite="lax")
+    return {"ok": True}
 
 
 @app.get("/api/me")
@@ -507,7 +831,12 @@ def pay_bill_endpoint(body: PayBody, request: Request, db: DbDep):
     payload = build_me_payload(user, db)
     payload["event"] = {
         "kind": "payment",
+        "title": f"{bill.name} paid",
         "points_added": payment.points_awarded,
+        "points_line": f"+{fmt_pts_num(payment.points_awarded)} points",
+        "worth_rent_line": worth_up_to_rent_line(payment.points_awarded),
+        "new_balance": user.points,
+        "new_balance_line": f"New balance: {fmt_pts_num(user.points)} pts",
         "bill_name": bill.name,
     }
     return payload
@@ -549,10 +878,10 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
     if body.points > user.points:
         raise HTTPException(400, "Insufficient points")
     rate = REDEMPTION_RATES[body.option]
-    value_cents = int(body.points * rate)
+    value_cents = redeem_value_cents(body.points, rate)
     user.points -= body.points
     user.redeemed_points += body.points
-    if body.option == "cash":
+    if body.option in ("cash", "rent"):
         user.woza_cash_cents += value_cents
     db.add(
         Redemption(
@@ -565,13 +894,23 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
     )
     db.commit()
     db.refresh(user)
+    bills = db.query(Bill).filter(Bill.user_id == user.id).options(joinedload(Bill.payments)).all()
+    rent_period = next_unpaid_rent_period(bills)
+    rent_label = period_due_short(rent_period)
+    value_display = fmt_rand_cents(value_cents)
     payload = build_me_payload(user, db)
-    payload["event"] = {
+    event = {
         "kind": "redeem",
         "option": body.option,
         "points_spent": body.points,
-        "value_display": fmt_rand(value_cents),
+        "value_cents": value_cents,
+        "value_display": value_display,
     }
+    if body.option == "rent":
+        event["success_message"] = (
+            f"{value_display} added to Woza cash for your {rent_label} rent"
+        )
+    payload["event"] = event
     return payload
 
 
@@ -585,11 +924,15 @@ def revoke_bank_consent(request: Request, db: DbDep):
 
 
 @app.post("/api/reset")
-def reset_demo(request: Request, response: Response, db: DbDep):
+def reset_demo(request: Request, response: Response, db: DbDep, body: ResetBody = ResetBody()):
     get_user_id(request)
     drop_and_reseed()
     db.expire_all()
     user = db.query(User).first()
+    if body.name:
+        apply_member_name(user, body.name)
+        db.commit()
+        db.refresh(user)
     sid = secrets.token_urlsafe(32)
     _sessions[sid] = user.id
     response.set_cookie(
@@ -624,7 +967,14 @@ def lender_view(db: DbDep):
             "status": after["status"],
             "score": after["score"],
             "grace_unused": after["grace_unused"],
-            "summary": f"{after['on_time_months']} on-time months, {after['bill_count']} bills, {after['monthly_display']}/month, {after['status']}, score {after['score']}, {after['grace_unused']} grace unused",
+            "membership_tier": after["membership_tier"],
+            "months_to_black": after["months_to_black"],
+            "tier_goal_line": after["tier_goal_line"],
+            "summary": (
+                f"{after['on_time_months']} on-time months, {after['bill_count']} bills, "
+                f"{after['monthly_display']}/month, {after['membership_tier']}, "
+                f"score {after['score']}, {after['grace_unused']} grace unused"
+            ),
         },
     }
 
@@ -634,14 +984,22 @@ def health():
     return {"ok": True, "service": "woza-rewards"}
 
 
+NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+
+
 @app.get("/")
 def index():
-    return FileResponse(STATIC / "index.html")
+    return FileResponse(STATIC / "index.html", headers=NO_CACHE)
 
 
 @app.get("/lender")
 def lender_page():
     return FileResponse(STATIC / "lender.html")
+
+
+@app.get("/card-preview")
+def card_preview_page():
+    return FileResponse(STATIC / "card-preview.html", headers=NO_CACHE)
 
 
 if STATIC.exists():

@@ -8,7 +8,7 @@ from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
 CURRENT_PERIOD = "2026-11"
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
-DEMO_VERSION = 5
+DEMO_VERSION = 7
 
 AVAILABLE_POINTS = 12_000
 LIFETIME_POINTS = 331_200
@@ -54,8 +54,8 @@ def _seed(db: Session) -> None:
     user = User(
         name="Thandi Mokoena",
         phone="072 418 3390",
-        status="Silver",
-        months_on_time=12,
+        status="Gold",
+        months_on_time=36,
         score=742,
         points=AVAILABLE_POINTS,
         lifetime_points=LIFETIME_POINTS,
@@ -98,9 +98,9 @@ def _seed(db: Session) -> None:
             "payee": "Prepaid electricity R1 100 + water R400",
             "verification": "through_woza",
             "due_day": 1,
-            "months_on_time": 30,
+            "months_on_time": 36,
             "points_per_month": 1_500,
-            "history_months": 30,
+            "history_months": 36,
         },
         {
             "name": "Car finance",
@@ -199,16 +199,31 @@ def score_label(score: int) -> str:
     return "Building"
 
 
+REDEMPTION_ORDER = ["rent", "electricity", "data", "fuel", "groceries", "ebucks", "cash"]
+
 REDEMPTION_RATES = {
     "rent": 1.5,
+    "electricity": 1.5,
+    "data": 1.0,
+    "fuel": 1.0,
+    "groceries": 1.0,
     "ebucks": 1.0,
-    "airtime": 1.0,
     "cash": 0.5,
 }
 
-REDEEM_VALUE_LABELS = {
-    "rent": "off rent",
-    "ebucks": "in eBucks",
-    "airtime": "airtime",
-    "cash": "cash out",
+REDEMPTION_TITLES = {
+    "rent": "Towards next rent",
+    "electricity": "Prepaid electricity",
+    "data": "Data and airtime",
+    "fuel": "Fuel",
+    "groceries": "Groceries",
+    "ebucks": "eBucks",
+    "cash": "Cash out to bank",
+}
+
+# approximate, update at launch
+REDEEM_UNITS_PER_RAND = {
+    "electricity": 0.31,  # units per rand
+    "data": 0.0167,  # GB per rand
+    "fuel": 0.045,  # litres per rand
 }

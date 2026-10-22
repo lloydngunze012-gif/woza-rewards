@@ -1,6 +1,6 @@
 # Woza Rewards
 
-Pay today. Get more tomorrow. — Demo PWA for the FNB App of the Year Hackathon.
+Pay today. Earn tomorrow. — Demo PWA for the FNB App of the Year Hackathon.
 
 **Disclaimer:** All data in this app is synthetic and for demonstration only.
 
@@ -24,6 +24,8 @@ Quick deploy:
 3. Copy the live **`.onrender.com`** URL into your submission.
 
 After a cold start or redeploy, **Profile → Reset demo** restores the seeded Thandi state.
+
+**Demo story:** Thandi is **Gold** with **36 on-time months** toward **Black** (48 months). Home shows a three-stop tier ladder (Silver · Gold · Black).
 
 ## Demo credentials
 
@@ -60,6 +62,16 @@ Windows shortcut:
 
 Then on the phone use `http://<Wi-Fi-IPv4-from-ipconfig>:8000` (e.g. `http://192.168.1.81:8000`). Allow Python through Windows Firewall if prompted.
 
+### Slow on your phone?
+
+| Cause | What you see | Fix |
+|--------|----------------|-----|
+| **Wrong URL** | Spinner / “Cannot reach server” | Use **`http://YOUR-PC-WIFI-IP:8000`**, not `127.0.0.1`. Run **`.\run.ps1`** (binds `0.0.0.0`). |
+| **PC server asleep / not running** | Long wait, then error | Start **`.\run.ps1`** and keep the PC awake on Wi‑Fi. |
+| **Render free tier** | 30–60s first load after idle | Use **HTTPS Render URL** for judges; expect cold starts. |
+| **First visit** | Extra second for fonts + session check | **Second visit** is faster (service worker caches the app shell). |
+| **Heavy tier card** | Brief pause after login | Card art is shared/cached now; pull latest + hard refresh once. |
+
 Lender view: append `/lender` to whichever base URL you use.
 
 ## Demo screenshots (local)
@@ -72,7 +84,7 @@ python -m playwright install chromium
 python tools/screenshots.py
 ```
 
-Outputs `screenshots/*.png` and `screenshots.zip`.
+Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, and rebuilds `screenshots.zip`.
 
 ## API (JSON)
 

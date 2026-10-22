@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Woza tier cards · preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/woza-card.css" />
+  <style>
+    :root { --bg: #f6f4fb; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); }
+    .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="card-preview-page">
+    <h1>Tier card preview</h1>
+    <div class="card-preview-stack" id="stack"></div>
+    <p style="font-size:0.8rem;color:#6b6485;margin-top:8px"><a href="/">← Back to app</a></p>
+  </div>
+  <script src="/static/woza-card.js"></script>
+  <script>
+    function fmtPts(n) { return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+    WozaCard.configure({ fmtPts, slogan: "Pay today. Earn tomorrow." });
+    const samples = [
+      { status: "Gold", name: "Thandi Mokoena", member_since: "Oct 2023", available_points: 12000 },
+      { status: "Silver", name: "Sample Member", member_since: "Jan 2024", available_points: 8000 },
+      { status: "Black", name: "Elite Member", member_since: "Mar 2022", available_points: 24000 },
+    ];
+    document.getElementById("stack").innerHTML = samples
+      .map((u) => WozaCard.membershipCardHtml(u, false))
+      .join("");
+    WozaCard.bindMembershipCards();
+  </script>
+</body>
+</html>

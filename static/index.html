@@ -6,11 +6,14 @@
   <meta name="theme-color" content="#5B2BD9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Woza Rewards</title>
+  <meta name="description" content="Pay today. Earn tomorrow." />
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
+  <link rel="stylesheet" href="/static/woza-card.css" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -26,6 +29,18 @@
       --verified: #1F9D63;
       --nav-h: 64px;
       --safe-b: env(safe-area-inset-bottom, 0px);
+      --t-fast: 150ms;
+      --t-base: 400ms;
+      --t-slow: 900ms;
+      --t-press: 80ms;
+      --t-release: 260ms;
+      --t-ripple: 450ms;
+      --t-flip: 600ms;
+      --t-sweep: 700ms;
+      --t-score: 1000ms;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -53,16 +68,32 @@
       border: 1px solid var(--line);
     }
     label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 8px; }
-    input[type=tel], input[type=number] {
+    input[type=tel], input[type=number], input[type=text] {
       width: 100%; padding: 14px 16px; border-radius: 14px;
       border: 1px solid var(--line); background: var(--bg); color: var(--ink);
       font-size: 1rem; font-family: inherit;
     }
+    .login-brand { text-align: center; margin-bottom: 8px; }
+    .login-mark {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+    .login-mark span {
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 2rem; line-height: 1;
+    }
+    .login-wordmark {
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.6rem;
+    }
+    .login-slogan { text-align: center; }
     .btn-primary {
       width: 100%; height: 48px; margin-top: 12px;
       background: var(--primary); color: #fff; border-radius: 14px;
       font-weight: 600; font-size: 1rem;
     }
+    .btn-primary:disabled { opacity: 0.45; pointer-events: none; }
     .btn-secondary {
       width: 100%; height: 48px; margin-top: 10px;
       background: var(--primary-soft); color: var(--primary);
@@ -70,31 +101,11 @@
     }
     .err { color: #dc2626; font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
 
-    .membership {
-      aspect-ratio: 1.586 / 1; border-radius: 20px; padding: 20px;
-      background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
-      color: #fff; position: relative; overflow: hidden; margin-bottom: 24px;
-      box-shadow: 0 12px 40px rgba(42, 20, 88, 0.25);
-    }
-    .membership::after {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(120deg, rgba(255,255,255,0.12) 0%, transparent 45%);
-      pointer-events: none;
-    }
-    .membership.compact { aspect-ratio: auto; padding: 16px 18px; margin-bottom: 20px; }
-    .membership.compact .mem-points { font-size: 1.5rem; }
-    .mem-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
-    .mem-brand { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.25rem; }
-    .tier-mark {
-      background: rgba(201, 162, 74, 0.25); color: var(--gold);
-      border: 1px solid rgba(201, 162, 74, 0.5);
-      padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600;
-    }
-    .mem-name { margin-top: 28px; font-size: 0.9rem; opacity: 0.9; position: relative; z-index: 1; }
-    .mem-label { font-size: 0.75rem; opacity: 0.75; margin-top: 16px; position: relative; z-index: 1; }
-    .mem-points { font-family: "Sora", sans-serif; font-weight: 700; font-size: 2rem;
-      font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
-    .mem-life { font-size: 0.8rem; opacity: 0.8; margin-top: 6px; position: relative; z-index: 1; }
+    .home-brand { margin-bottom: 16px; }
+    .home-wordmark { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.35rem; color: var(--ink); }
+    .home-tagline { font-size: 0.875rem; color: var(--muted); margin-top: 4px; }
+
+    .debit-label { font-size: 0.72rem; color: var(--muted); margin-top: 3px; font-weight: 500; line-height: 1.35; word-break: break-word; }
 
     .panel {
       background: var(--surface); border-radius: 16px; border: 1px solid var(--line);
@@ -102,21 +113,88 @@
     }
     .panel h3 { font-family: "Sora", sans-serif; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
     .muted { color: var(--muted); font-size: 0.875rem; line-height: 1.45; }
-    .progress { height: 8px; background: var(--primary-soft); border-radius: 99px; overflow: hidden; margin-top: 10px; }
-    .progress > span { display: block; height: 100%; background: var(--primary); border-radius: 99px; }
+    .tier-ladder { margin-top: 4px; max-width: 100%; overflow: hidden; }
+    .tier-ladder-rail {
+      position: relative; height: 52px; margin: 0 7px 6px;
+    }
+    .tier-ladder-track {
+      position: absolute; left: 0; right: 0; top: 18px; height: 6px;
+      background: var(--primary-soft); border-radius: 99px;
+    }
+    .tier-ladder-fill {
+      position: absolute; left: 0; right: 0; top: 18px; height: 6px;
+      background: var(--primary); border-radius: 99px;
+      transform: scaleX(var(--fill-to, 0.75));
+      transform-origin: left center;
+    }
+    .tier-stop {
+      position: absolute; top: 8px; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; z-index: 2;
+    }
+    .tier-dot {
+      width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; line-height: 1; box-sizing: border-box;
+    }
+    .tier-stop.reached .tier-dot {
+      background: var(--primary); color: #fff; border: 2px solid var(--primary);
+    }
+    .tier-stop.gold.reached .tier-dot {
+      box-shadow: 0 0 0 2px var(--gold);
+    }
+    .tier-stop.black:not(.reached) .tier-dot {
+      background: var(--surface); border: 2px solid var(--primary-soft); color: transparent;
+    }
+    .tier-you {
+      position: absolute; top: 0; transform: translateX(-50%); z-index: 3;
+      font-size: 0.62rem; font-weight: 600; color: var(--ink); white-space: nowrap;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 2px 5px;
+    }
+    .tier-you::after {
+      content: ""; position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+      border: 4px solid transparent; border-top-color: var(--line);
+    }
+    .tier-ladder-labels {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+      text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--ink);
+      white-space: nowrap;
+    }
+    .tier-ladder-subs {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+      text-align: center; font-size: 0.62rem; color: var(--muted); margin-top: 2px;
+      white-space: nowrap;
+    }
+    .tier-ladder-caption {
+      margin-top: 10px; font-size: 0.72rem; font-weight: 500; color: var(--muted);
+      text-align: center;
+    }
+    .row-value { font-weight: 700; font-size: 0.92rem; margin-top: 2px; line-height: 1.35; word-break: break-word; }
+    .row-rate { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
     .score-row { display: flex; gap: 14px; align-items: center; }
     .score-ring {
-      width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--primary);
+      width: 64px; height: 64px; border-radius: 50%;
       display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;
+      position: relative;
     }
-    .score-ring strong { font-family: "Sora", sans-serif; font-size: 1.1rem; }
-    .score-ring em { font-style: normal; font-size: 0.65rem; color: var(--muted); }
+    .score-ring svg { position: absolute; inset: 0; width: 64px; height: 64px; }
+    .score-track { fill: none; stroke: var(--primary-soft); stroke-width: 4; }
+    .score-fill {
+      fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round;
+      stroke-dasharray: 169.65; stroke-dashoffset: var(--score-offset, 21.54);
+      transform: rotate(-90deg); transform-origin: 32px 32px;
+    }
+    .score-ring-text { position: relative; z-index: 1; text-align: center; }
+    .score-ring strong { font-family: "Sora", sans-serif; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+    .score-ring em { font-style: normal; font-size: 0.65rem; color: var(--muted); display: block; }
 
     .group-list { background: var(--surface); border-radius: 16px; border: 1px solid var(--line); overflow: hidden; }
     .group-row {
-      display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center;
+      display: flex; align-items: flex-start; gap: 10px;
       padding: 14px 16px; border-bottom: 1px solid var(--line); width: 100%; text-align: left;
+      box-sizing: border-box; max-width: 100%;
     }
+    .group-row .icon-wrap { flex-shrink: 0; }
+    .group-row .row-text { flex: 1; min-width: 0; }
+    .group-row .row-action { flex-shrink: 0; align-self: center; }
     .group-row:last-child { border-bottom: none; }
     .icon-wrap {
       width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft);
@@ -124,8 +202,10 @@
     }
     .icon-wrap svg { width: 20px; height: 20px; stroke: var(--primary); fill: none; stroke-width: 2; }
     .row-title { font-weight: 600; font-size: 0.92rem; }
-    .row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; white-space: nowrap; }
-    .row-points { font-size: 0.78rem; color: var(--primary); font-weight: 600; margin-top: 4px; white-space: nowrap; }
+    .row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; line-height: 1.35; word-break: break-word; }
+    .row-was { text-decoration: line-through; color: var(--muted); margin-right: 6px; }
+    .row-now { color: var(--verified); font-weight: 600; }
+    .row-points { font-size: 0.78rem; color: var(--primary); font-weight: 600; margin-top: 4px; line-height: 1.35; word-break: break-word; }
     .bureau-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
     .bureau-row svg { width: 18px; height: 18px; stroke: var(--primary); flex-shrink: 0; margin-top: 1px; }
     .page-title, .page-sub { padding-left: 0; margin-left: 0; }
@@ -142,7 +222,8 @@
     }
     .badge-unverified { background: #FEE2E2; color: #B91C1C; }
     .badge {
-      font-size: 0.72rem; font-weight: 600; padding: 5px 8px; border-radius: 8px; white-space: nowrap;
+      font-size: 0.72rem; font-weight: 600; padding: 5px 8px; border-radius: 8px;
+      white-space: nowrap;
     }
     .badge-due { background: var(--primary-soft); color: var(--primary); }
     .badge-paid { background: rgba(31, 157, 99, 0.12); color: var(--verified); }
@@ -157,6 +238,7 @@
       width: 100%; max-width: 390px; height: calc(var(--nav-h) + var(--safe-b));
       padding-bottom: var(--safe-b); background: var(--surface);
       border-top: 1px solid var(--line); display: flex; align-items: center;
+      z-index: 60;
     }
     .nav button {
       flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -173,7 +255,7 @@
     .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .sheet-backdrop {
-      position: fixed; inset: 0; background: rgba(28, 21, 48, 0.4); z-index: 40;
+      position: fixed; inset: 0; background: rgba(28, 21, 48, 0.45); z-index: 200;
       opacity: 0; pointer-events: none; transition: opacity 0.2s;
     }
     .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -181,12 +263,27 @@
       position: fixed; left: 50%; transform: translate(-50%, 100%); bottom: 0;
       width: 100%; max-width: 390px; background: var(--surface);
       border-radius: 20px 20px 0 0; padding: 20px 20px calc(24px + var(--safe-b));
-      z-index: 50; transition: transform 0.25s ease; border-top: 1px solid var(--line);
+      z-index: 210; transition: transform 0.25s ease; border-top: 1px solid var(--line);
+      visibility: hidden; pointer-events: none;
+      max-height: calc(100dvh - 12px); overflow-y: auto;
     }
-    .sheet.open { transform: translate(-50%, 0); }
+    .sheet.open { transform: translate(-50%, 0); visibility: visible; pointer-events: auto; }
     .sheet h3 { font-family: "Sora", sans-serif; font-weight: 600; font-size: 1.1rem; margin-bottom: 12px; }
     .sheet-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
     .sheet-actions .btn-primary { margin-top: 0; }
+    .redeem-chips { display: flex; gap: 8px; margin-top: 10px; }
+    .redeem-chip {
+      padding: 8px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
+      border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    }
+    .redeem-chip.active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+    .sheet-value { font-weight: 700; font-size: 1.05rem; margin: 4px 0 12px; line-height: 1.35; }
+    .launch-bill {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 14px 16px; border-bottom: 1px solid var(--line);
+    }
+    .launch-bill:last-child { border-bottom: none; }
+    .launch-bill .row-text { flex: 1; min-width: 0; }
     .toast {
       position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
       background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
@@ -197,43 +294,281 @@
     .benefit-line { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
     .benefit-line:last-child { border-bottom: none; }
     .timeline h4 { font-size: 0.88rem; margin-bottom: 8px; font-weight: 600; }
-    .timeline-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
-    .dot { width: 10px; height: 10px; border-radius: 2px; background: var(--primary); }
-    .profile-actions { margin-top: 20px; display: grid; gap: 10px; }
+    .progress-item + .progress-item { border-top: 1px solid var(--line); }
+    .progress-head {
+      width: 100%; display: flex; align-items: center; gap: 10px;
+      padding: 12px 0; text-align: left;
+    }
+    .progress-head .row-text { flex: 1; min-width: 0; }
+    .progress-head .chevron { transition: transform 0.2s ease; }
+    .progress-item.open .chevron { transform: rotate(90deg); }
+    .cal-caption { font-size: 0.72rem; color: var(--muted); margin: 0 0 8px 50px; }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      margin: 0 0 12px 50px;
+    }
+    .cal-cell {
+      background: var(--bg); border-radius: 10px; padding: 8px 4px; text-align: center;
+    }
+    .cal-cell .mo { display: block; font-size: 0.65rem; color: var(--muted); font-weight: 600; }
+    .cal-cell .mark { display: block; margin-top: 2px; font-size: 0.95rem; font-weight: 700; line-height: 1; }
+    .cal-cell.paid .mark { color: var(--verified); }
+    .cal-cell.due .mark { color: var(--primary); }
+    .cal-cell.grace .mark { color: var(--gold); }
+    .cal-cell.missed .mark { color: #b91c1c; }
+    .tap-press { transition: transform var(--t-press) ease-out; }
+    .is-press { transform: scale(0.96); }
+    .is-release { transition: transform var(--t-release) var(--ease-spring); transform: scale(1); }
+    .btn-primary { position: relative; overflow: hidden; }
+    .btn-ripple {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      background: rgba(255, 255, 255, 0.25);
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple var(--t-ripple) ease-out forwards;
+    }
+    @keyframes ripple {
+      to { transform: translate(-50%, -50%) scale(12); opacity: 0; }
+    }
+    #appView .screen { transition: opacity var(--t-fast) ease-out; }
+    #appView .screen.tab-enter { opacity: 0; }
+    #appView .screen.tab-leave {
+      position: absolute; left: 0; right: 0; top: 0; width: 100%;
+      pointer-events: none;
+    }
+    #appView .screen.tab-leave-active { opacity: 0; }
+    .sheet-check { width: 56px; height: 56px; display: block; margin: 0 auto 12px; color: var(--verified); }
+    .sheet-check-mark {
+      fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 36; stroke-dashoffset: 36;
+      animation: drawCheck 400ms var(--ease-out) forwards;
+    }
+    @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+    .home-intro .card-flip {
+      animation: rise16 var(--t-base) var(--ease-out) both;
+    }
+    .home-intro .mem-sweep {
+      animation: sweep var(--t-sweep) var(--ease-out) 300ms both;
+    }
+    .home-intro .tier-ladder-fill {
+      animation: fillGrow var(--t-slow) var(--ease-in-out) 450ms both;
+    }
+    .home-intro .tier-stop.reached .tier-dot {
+      animation: checkPop 250ms var(--ease-spring) calc(450ms + var(--t-slow) * var(--pop-at, 0.25)) both;
+    }
+    .home-intro .tier-you {
+      opacity: 0;
+      animation: fadeIn var(--t-base) var(--ease-out) calc(450ms + var(--t-slow) * 0.75) both;
+    }
+    .home-intro .score-fill {
+      animation: scoreDraw var(--t-score) var(--ease-out) 650ms both;
+    }
+    .home-intro .score-ring em {
+      opacity: 0;
+      animation: fadeIn var(--t-fast) ease-out calc(650ms + var(--t-score)) both;
+    }
+    .home-intro .bill-row {
+      opacity: 0;
+      transform: translateY(8px);
+      animation: rise8 var(--t-base) var(--ease-out) calc(650ms + var(--i, 0) * 60ms) both;
+    }
+    @keyframes rise16 {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes rise8 {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes sweep {
+      from { transform: translateX(-120%); opacity: 1; }
+      to { transform: translateX(120%); opacity: 1; }
+    }
+    @keyframes fillGrow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(var(--fill-to, 0.75)); }
+    }
+    @keyframes checkPop {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    @keyframes scoreDraw {
+      from { stroke-dashoffset: 169.65; }
+      to { stroke-dashoffset: var(--score-offset, 21.54); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-intro .card-flip,
+      .home-intro .mem-sweep,
+      .home-intro .tier-ladder-fill,
+      .home-intro .tier-stop.reached .tier-dot,
+      .home-intro .tier-you,
+      .home-intro .score-fill,
+      .home-intro .score-ring em,
+      .home-intro .bill-row,
+      .sheet-check-mark,
+      .btn-ripple { animation: none !important; }
+      .home-intro .card-flip,
+      .home-intro .tier-you,
+      .home-intro .score-ring em,
+      .home-intro .bill-row { opacity: 1 !important; transform: none !important; }
+      .home-intro .tier-ladder-fill { transform: scaleX(var(--fill-to, 0.75)) !important; }
+      .home-intro .score-fill { stroke-dashoffset: var(--score-offset, 21.54) !important; }
+      .sheet-check-mark { stroke-dashoffset: 0 !important; }
+      .is-press, .is-release, .tap-press { transform: none !important; transition: none !important; }
+      #appView .screen { transition: none !important; }
+    }
+    .profile-actions { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .profile-actions a, .profile-actions button {
       display: block; width: 100%; height: 48px; line-height: 48px; border-radius: 14px;
-      text-align: center; text-decoration: none; font-weight: 600;
+      text-align: center; text-decoration: none; font-weight: 600; margin-top: 0; padding: 0;
     }
     .profile-actions a { background: var(--primary-soft); color: var(--primary); }
-    .profile-actions .danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; height: auto; line-height: 1.4; padding: 14px; }
+    .profile-actions .danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+    .name-hint { margin-top: 10px; }
+    .name-chip {
+      padding: 8px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
+      border: 1px solid var(--line); background: var(--bg); color: var(--primary);
+    }
     .demo-note { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 16px; }
     @media (prefers-reduced-motion: reduce) {
       .mem-points { transition: none !important; }
     }
+
+    .desk-aside { display: none; }
+    .desk-stage, .phone-frame, .phone-screen { display: contents; }
+
+    @media (min-width: 600px) and (max-width: 900px) {
+      .login-wrap, .phone { width: 390px; max-width: 390px; margin-left: auto; margin-right: auto; }
+    }
+
+    @media (min-width: 901px) {
+      html, body { overflow: hidden; height: 100%; }
+      .desk-stage {
+        display: flex; align-items: center; justify-content: center;
+        gap: clamp(24px, 4vw, 56px); height: 100%;
+        padding: 24px clamp(20px, 4vw, 48px); overflow: hidden;
+      }
+      .desk-aside {
+        display: block; flex: 0 1 340px; min-width: 200px; max-width: 360px;
+      }
+      .desk-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+      .desk-monogram {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--primary); color: #fff;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+      .desk-monogram span {
+        font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.25rem; line-height: 1;
+      }
+      .desk-wordmark {
+        font-family: "Sora", sans-serif; font-weight: 700; font-size: 2rem; letter-spacing: -0.02em;
+      }
+      .desk-slogan {
+        font-family: "Sora", sans-serif; font-weight: 600; font-size: 1.15rem;
+        line-height: 1.35; margin-bottom: 12px;
+      }
+      .desk-line { color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+      .desk-hint { margin-top: 20px; font-size: 0.78rem; color: var(--muted); }
+      .phone-frame {
+        display: block; flex-shrink: 0; box-sizing: content-box;
+        width: 390px; height: 844px; padding: 12px;
+        background: #1C1530; border-radius: 44px;
+        box-shadow: 0 28px 64px rgba(28, 21, 48, 0.22), 0 6px 18px rgba(28, 21, 48, 0.1);
+        transform: scale(min(1, (100dvh - 40px) / 868));
+        transform-origin: center center;
+      }
+      .phone-screen {
+        display: block; position: relative; isolation: isolate;
+        width: 390px; height: 844px; overflow: hidden;
+        background: var(--bg); border-radius: 32px;
+        transform: translateZ(0);
+      }
+      .login-wrap {
+        min-height: 100%; height: 100%; max-width: none; width: 100%;
+        overflow-x: hidden; overflow-y: auto;
+      }
+      .phone {
+        max-width: none; width: 100%; height: 100%; min-height: 0;
+        overflow: hidden; padding-bottom: 0;
+      }
+      .phone .screen {
+        height: 100%; overflow-x: hidden; overflow-y: auto;
+        padding-bottom: calc(var(--nav-h) + 16px);
+      }
+      .nav {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        transform: none; width: 100%; max-width: none;
+        border-radius: 0 0 32px 32px;
+      }
+      .sheet {
+        left: 0; width: 100%; max-width: none;
+        transform: translateY(100%);
+      }
+      .sheet.open { transform: translateY(0); }
+      .phone-screen .screen,
+      .phone-screen .login-wrap {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(107, 100, 133, 0.4) transparent;
+      }
+      .phone-screen .screen::-webkit-scrollbar,
+      .phone-screen .login-wrap::-webkit-scrollbar {
+        width: 5px;
+      }
+      .phone-screen .screen::-webkit-scrollbar-track,
+      .phone-screen .login-wrap::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .phone-screen .screen::-webkit-scrollbar-thumb,
+      .phone-screen .login-wrap::-webkit-scrollbar-thumb {
+        background: rgba(107, 100, 133, 0.4);
+        border-radius: 99px;
+        border: none;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="desk-stage">
+    <aside class="desk-aside">
+      <div class="desk-brand">
+        <div class="desk-monogram" aria-hidden="true"><span>W</span></div>
+        <span class="desk-wordmark">Woza</span>
+      </div>
+      <p class="desk-slogan">Pay today. Earn tomorrow.</p>
+      <p class="desk-line">Rewards and a credit record for the bills you already pay on time.</p>
+      <p class="desk-hint">Demo: type your name and continue</p>
+    </aside>
+    <div class="phone-frame">
+      <div class="phone-screen">
   <div id="loginView" class="login-wrap">
-    <h1 class="page-title" style="margin-bottom:8px">Woza</h1>
-    <p class="muted" style="margin-bottom:24px">Pay today. Get more tomorrow.</p>
+    <div class="login-brand">
+      <div class="login-mark" aria-hidden="true"><span>W</span></div>
+      <h1 class="login-wordmark">Woza</h1>
+    </div>
+    <p class="muted login-slogan" style="margin-bottom:24px">Pay today. Earn tomorrow.</p>
     <div class="login-card">
-      <label for="phone">Mobile number</label>
-      <input id="phone" type="tel" placeholder="072 418 3390" autocomplete="tel" />
+      <label for="displayName">Name</label>
+      <input id="displayName" type="text" placeholder="Your name" autocomplete="name" />
+      <div class="name-hint" id="nameHint"></div>
       <button type="button" class="btn-primary" id="loginBtn">Continue</button>
-      <button type="button" class="btn-secondary" id="demoBtn">Try as Thandi</button>
       <p class="err" id="loginErr"></p>
+      <p class="muted" id="bootStatus" style="margin-top:12px;font-size:0.82rem;display:none">Connecting…</p>
     </div>
   </div>
 
   <div id="appView" class="phone hidden">
     <div id="screenHome" class="screen"></div>
-    <div id="screenPayments" class="screen hidden"></div>
     <div id="screenRewards" class="screen hidden"></div>
+    <div id="screenPayments" class="screen hidden"></div>
     <div id="screenProfile" class="screen hidden"></div>
     <nav class="nav" id="tabNav">
       <button type="button" data-tab="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>Home</button>
-      <button type="button" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
       <button type="button" data-tab="rewards"><svg viewBox="0 0 24 24"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>Rewards</button>
+      <button type="button" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
       <button type="button" data-tab="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/></svg>Profile</button>
     </nav>
   </div>
@@ -241,28 +576,124 @@
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="sheet"><div id="sheetBody"></div></div>
   <div class="toast" id="toast"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/qrcode.js"></script>
+  <script src="/static/woza-card.js"></script>
 
   <script>
     const IC = {
-      home: '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>',
-      rent: '<svg viewBox="0 0 24 24"><path d="M4 10.5L12 3l8 6.5V19a1 1 0 01-1 1h-5v-5H10v5H5a1 1 0 01-1-1v-8.5z"/></svg>',
-      utilities: '<svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z"/></svg>',
-      car: '<svg viewBox="0 0 24 24"><path d="M5 16l1-4h12l1 4M6 16v2M18 16v2M4 12l2-5h12l2 5"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg>',
-      gift: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M12 8a3 3 0 100-6c1.5 0 2.5 1.5 3 2.5.5-1 1.5-2.5 3-2.5a3 3 0 010 6"/></svg>',
-      smartphone: '<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
-      landmark: '<svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V10l6-4 6 4v11"/><path d="M10 21v-6h4v6"/></svg>',
+      home: '<svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+      rent: '<svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+      utilities: '<svg viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+      zap: '<svg viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+      wifi: '<svg viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/></svg>',
+      fuel: '<svg viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>',
+      basket: '<svg viewBox="0 0 24 24"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>',
+      car: '<svg viewBox="0 0 24 24"><path d="M5 13l1.6-4.2A2 2 0 018.5 7h5.2a2 2 0 011.8 1.1L17.5 13H20a1 1 0 011 1v2.5h-2.2"/><path d="M4 13H3.5A1.5 1.5 0 002 14.5V16h3"/><path d="M7 11h8"/><circle cx="7.2" cy="17.2" r="1.8"/><circle cx="16.8" cy="17.2" r="1.8"/></svg>',
+      gift: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>',
+      landmark: '<svg viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>',
+      plus: '<svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+      graduation: '<svg viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>',
+      users: '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      heartPulse: '<svg viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>',
       star: '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6L12 2z"/></svg>',
       shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
       chevron: '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>',
     };
-    const REDEEM_IC = { rent: "rent", ebucks: "gift", airtime: "smartphone", cash: "landmark" };
-    const RATES = { rent: 1.5, ebucks: 1, airtime: 1, cash: 0.5 };
+    const REDEEM_IC = { rent: "home", electricity: "zap", data: "wifi", fuel: "fuel", groceries: "basket", ebucks: "gift", cash: "landmark" };
+    const LAUNCH_BILLS = [
+      { title: "Fibre and Wi-Fi", icon: "wifi" },
+      { title: "Insurance", icon: "shield" },
+      { title: "School fees", icon: "graduation" },
+      { title: "Stokvel", icon: "users" },
+      { title: "Medical aid", icon: "heartPulse" },
+    ];
+    /* fallback if API omits it; source of truth is REDEEM_UNITS_PER_RAND in seed.py */
+    const REDEEM_UNITS_FALLBACK = { electricity: 0.31, data: 0.0167, fuel: 0.045 };
+    function localGreeting(name) {
+      const h = new Date().getHours();
+      let part = "evening";
+      if (h >= 5 && h < 12) part = "morning";
+      else if (h >= 12 && h < 17) part = "afternoon";
+      return `Good ${part}, ${name.split(" ")[0]}`;
+    }
+    function fmtRandCents(cents) {
+      const whole = Math.floor(cents / 100);
+      const frac = cents % 100;
+      const wholeS = fmtPts(whole);
+      return frac === 0 ? `R${wholeS}` : `R${wholeS}.${String(frac).padStart(2, "0")}`;
+    }
 
+    function redeemCents(points, rate) {
+      return Math.floor(points * rate);
+    }
+
+    function redeemUnits() {
+      return (state && state.rewards && state.rewards.redeem_units_per_rand) || REDEEM_UNITS_FALLBACK;
+    }
+
+    function aboutUnits(rands, perRand) {
+      return Math.floor(rands * perRand);
+    }
+
+    function redeemValueLine(id, points, rate) {
+      if (points <= 0) return "Earn points on your bills to unlock";
+      const cents = redeemCents(points, rate);
+      const rands = cents / 100;
+      const display = fmtRandCents(cents);
+      const units = redeemUnits();
+      if (id === "rent") return `${display} off rent`;
+      if (id === "electricity") return `${display} of electricity, about ${aboutUnits(rands, units.electricity)} units`;
+      if (id === "data") return `${display} of data, about ${aboutUnits(rands, units.data)} GB`;
+      if (id === "fuel") return `${display} of fuel, about ${aboutUnits(rands, units.fuel)} litres`;
+      if (id === "groceries") return `${display} at partner stores`;
+      if (id === "ebucks") return `${display} in eBucks`;
+      if (id === "cash") return `${display} to your account`;
+      return display;
+    }
+
+    function addBillRowHtml(i) {
+      return `<button type="button" class="group-row bill-row js-add-bill" style="--i:${i}">
+        <span class="icon-wrap">${IC.plus}</span>
+        <div class="row-text"><div class="row-title">Add a bill</div></div>
+      </button>`;
+    }
+
+    function bindAddBill(root) {
+      (root || document).querySelectorAll(".js-add-bill").forEach((el) => {
+        el.onclick = openAddBillSheet;
+      });
+    }
+
+    function openAddBillSheet() {
+      openSheet(`
+        <h3>Add a bill</h3>
+        <div class="group-list">
+          ${LAUNCH_BILLS.map((b) => `
+            <div class="launch-bill">
+              <span class="icon-wrap">${IC[b.icon]}</span>
+              <div class="row-text">
+                <div class="row-title">${b.title}</div>
+                <div class="row-sub">Available at launch</div>
+              </div>
+            </div>`).join("")}
+        </div>`);
+    }
+
+    const SLOGAN = "Pay today. Earn tomorrow.";
     let state = null;
     let busy = false;
     let rewardsTab = "redeem";
     let displayPoints = 0;
+    let displayPointsInitialized = false;
     let scrollBillId = null;
+    let progressOpen = 0;
+    let homeIntroPlayed = false;
+    let homeIntroTimers = [];
+    const SCORE_MAX = 850;
+    const SCORE_C = 169.65;
 
     function fmtPts(n) { return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
 
@@ -273,91 +704,258 @@
       setTimeout(() => el.classList.remove("show"), 2800);
     }
 
+    function apiErrorMessage(err) {
+      const m = (err && err.message) || "";
+      if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(m)) {
+        return "Cannot reach the server. On your phone use http://YOUR-PC-WIFI-IP:8000 (same Wi‑Fi as this PC).";
+      }
+      if (m === "Not logged in") return m;
+      return m || "Something went wrong";
+    }
+
     async function api(path, opts = {}) {
-      const res = await fetch(path, {
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
-        ...opts,
-      });
-      if (!res.ok) throw new Error(await res.text() || res.statusText);
+      let res;
+      try {
+        res = await fetch(path, {
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+          ...opts,
+        });
+      } catch (err) {
+        throw new Error(apiErrorMessage(err));
+      }
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Not logged in");
+        let detail = res.statusText;
+        try { detail = (await res.text()) || detail; } catch { /* ignore */ }
+        throw new Error(detail || res.statusText);
+      }
       return res.json();
     }
 
-    function membershipCard(u, compact) {
-      const pts = displayPoints || u.available_points;
+    function userPoints(u) {
+      return u.available_points ?? u.points ?? 0;
+    }
+
+    function tierLadderData(h, u) {
+      const mot = u.months_on_time ?? 36;
+      const max = 48;
+      if (h && h.tier_ladder) return h.tier_ladder;
+      const fill = Math.min(100, Math.round((mot / max) * 100));
+      const toBlack = Math.max(0, max - mot);
+      return {
+        months: mot,
+        max_months: max,
+        fill_pct: fill,
+        marker_pct: fill,
+        marker_label: `You: ${mot} months`,
+        caption_line: `${toBlack} months to Black`,
+        stops: [
+          { tier: "Silver", months: 12, pct: 25, reached: mot >= 12 },
+          { tier: "Gold", months: 24, pct: 50, reached: mot >= 24 },
+          { tier: "Black", months: 48, pct: 100, reached: mot >= 48 },
+        ],
+      };
+    }
+
+    function tierLadderHtml(ladder) {
+      const check = "✓";
+      const stops = ladder.stops.map(s => {
+        const cls = [
+          "tier-stop",
+          s.tier.toLowerCase(),
+          s.reached ? "reached" : "",
+        ].filter(Boolean).join(" ");
+        const inner = s.reached ? check : "";
+        return `<div class="${cls}" style="left:${s.pct}%;--pop-at:${(s.pct / 100).toFixed(2)}"><div class="tier-dot">${inner}</div></div>`;
+      }).join("");
+      const labels = ladder.stops.map(s =>
+        `<span>${s.tier}</span>`).join("");
+      const subs = ladder.stops.map(s =>
+        `<span>${s.months} mo</span>`).join("");
       return `
-        <div class="membership ${compact ? "compact" : ""}" id="membershipCard">
-          <div class="mem-top">
-            <div class="mem-brand">Woza</div>
-            <span class="tier-mark">${u.status}</span>
+        <div class="tier-ladder">
+          <div class="tier-ladder-rail">
+            <div class="tier-ladder-track"></div>
+            <div class="tier-ladder-fill" style="--fill-to:${(ladder.fill_pct / 100).toFixed(3)}"></div>
+            ${stops}
+            <div class="tier-you" style="left:${ladder.marker_pct}%">${ladder.marker_label}</div>
           </div>
-          <div class="mem-name">${u.name}</div>
-          <div class="mem-label">Available points</div>
-          <div class="mem-points font-num" id="memPoints">${fmtPts(pts)}</div>
-          <div class="mem-life">Lifetime ${u.lifetime_display.replace(" pts", "")} pts</div>
+          <div class="tier-ladder-labels">${labels}</div>
+          <div class="tier-ladder-subs">${subs}</div>
+          <p class="tier-ladder-caption">${ladder.caption_line}</p>
         </div>`;
     }
 
-    function animatePoints(from, to) {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        displayPoints = to;
-        const el = document.getElementById("memPoints");
-        if (el) el.textContent = fmtPts(to);
+    function syncWozaCardConfig() {
+      const tilt = WozaCard.getTiltState();
+      WozaCard.configure({
+        fmtPts,
+        slogan: SLOGAN,
+        getPoints: (u) => (displayPointsInitialized ? displayPoints : userPoints(u)),
+        cardTiltGranted: tilt.cardTiltGranted,
+        cardOrientBound: tilt.cardOrientBound,
+      });
+    }
+
+    function membershipCard(u, compact) {
+      syncWozaCardConfig();
+      let hint = false;
+      try { hint = !sessionStorage.getItem("woza.flipHint"); } catch { hint = true; }
+      if (prefersReduced()) hint = false;
+      return WozaCard.membershipCardStageHtml(u, compact, { hint: hint && !compact });
+    }
+
+    function bindMembershipCards() {
+      syncWozaCardConfig();
+      WozaCard.bindMembershipCards();
+      WozaCard.bindCardFlips();
+    }
+
+    function prefersReduced() {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function scoreOffset(n) {
+      return (SCORE_C * (1 - Math.min(1, n / SCORE_MAX))).toFixed(2);
+    }
+
+    function shouldPlayHomeIntro() {
+      if (prefersReduced()) return false;
+      return !homeIntroPlayed;
+    }
+
+    function clearHomeIntroTimers() {
+      homeIntroTimers.forEach(clearTimeout);
+      homeIntroTimers = [];
+    }
+
+    function armHomeIntro() {
+      homeIntroPlayed = false;
+      clearHomeIntroTimers();
+    }
+
+    function markHomeIntroDone() {
+      homeIntroPlayed = true;
+    }
+
+    function countEase(el, from, to, ms, delay) {
+      if (!el) return;
+      const startAt = performance.now() + (delay || 0);
+      const dur = ms;
+      function frame(t) {
+        if (t < startAt) { requestAnimationFrame(frame); return; }
+        const p = Math.min(1, (t - startAt) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = Math.round(from + (to - from) * eased);
+        el.textContent = el.classList.contains("mem-points") || el.hasAttribute("data-pts") ? fmtPts(v) : String(v);
+        if (p < 1) requestAnimationFrame(frame);
+        else el.textContent = el.classList.contains("mem-points") || el.hasAttribute("data-pts") ? fmtPts(to) : String(to);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function playHomeIntro(u) {
+      const home = document.getElementById("screenHome");
+      if (!home || !shouldPlayHomeIntro()) return;
+      clearHomeIntroTimers();
+      home.classList.remove("home-intro");
+      void home.offsetWidth;
+      home.classList.add("home-intro");
+      const pts = userPoints(u);
+      const score = u.score ?? 742;
+      displayPoints = 0;
+      const ptsEl = home.querySelector(".card-face-front .mem-points");
+      if (ptsEl) ptsEl.textContent = fmtPts(0);
+      const scoreEl = home.querySelector("[data-score-num]");
+      if (scoreEl) scoreEl.textContent = "0";
+      if (prefersReduced()) {
+        if (ptsEl) ptsEl.textContent = fmtPts(pts);
+        if (scoreEl) scoreEl.textContent = String(score);
+        displayPoints = pts;
+        markHomeIntroDone();
+        home.classList.remove("home-intro");
         return;
       }
-      const el = document.getElementById("memPoints");
-      if (!el) { displayPoints = to; return; }
+      countEase(ptsEl, 0, pts, 900, 250);
+      countEase(scoreEl, 0, score, 1000, 650);
+      homeIntroTimers.push(setTimeout(() => { displayPoints = pts; }, 1200));
+      homeIntroTimers.push(setTimeout(() => {
+        markHomeIntroDone();
+        home.classList.remove("home-intro");
+      }, 1800));
+    }
+
+    function animatePoints(from, to) {
+      const nodes = document.querySelectorAll("[data-membership-card] .mem-points");
+      const write = (v) => nodes.forEach((el) => { el.textContent = fmtPts(v); });
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        displayPoints = to;
+        write(to);
+        return;
+      }
+      if (!nodes.length) { displayPoints = to; return; }
       const start = performance.now();
       const dur = 700;
       function frame(t) {
         const p = Math.min(1, (t - start) / dur);
         const v = Math.round(from + (to - from) * p);
-        el.textContent = fmtPts(v);
+        write(v);
         if (p < 1) requestAnimationFrame(frame);
         else displayPoints = to;
       }
       requestAnimationFrame(frame);
     }
 
-    function badgeClass(b, u) {
-      if (b.is_bank_debit && u && !b.car_verified) return "badge-unverified";
-      if (b.is_bank_debit) return "badge-debit";
-      if (b.paid) return "badge-paid";
-      return "badge-due";
+    function billAmountLine(b, which) {
+      const status = which === "home" ? b.row_status_home : b.row_status_pay;
+      if (b.row_was_display && b.row_now_display) {
+        return `<span class="row-was">${b.row_was_display}</span><span class="row-now">${b.row_now_display}</span>${status ? ` · ${status}` : ""}`;
+      }
+      return which === "home" ? (b.row_amount_home || b.amount_display) : (b.row_amount_pay || b.payment_due_line);
     }
 
     function renderHome() {
       const u = state.user;
-      const h = state.home;
-      const pct = h.gold_progress_pct ?? 50;
-      const bills = state.payments.bills;
+      const h = state.home || {};
+      const ladder = tierLadderData(h, u);
+      const bureau = h.bureau_line || "36 on-time months shared with the credit bureau";
+      const bills = (state.payments && state.payments.bills) || [];
       document.getElementById("screenHome").innerHTML = `
+        <h2 class="page-title home-greeting">${localGreeting(u.name)}</h2>
+        <p class="page-sub home-slogan">${SLOGAN}</p>
         ${membershipCard(u, false)}
-        <div class="section panel">
-          <p class="muted" style="font-weight:600;color:var(--ink)">${h.months_to_gold_line}</p>
-          <div class="progress"><span style="width:${pct}%"></span></div>
-          <p class="muted" style="margin-top:8px;font-size:0.8rem">${h.gold_progress_label}</p>
+        <div class="section panel tier-ladder-panel">
+          ${tierLadderHtml(ladder)}
         </div>
         <div class="section panel score-row">
-          <div class="score-ring"><strong class="font-num">742</strong><em>${u.score_label}</em></div>
+          <div class="score-ring" style="--score-offset:${scoreOffset(u.score ?? 742)}">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <circle class="score-track" cx="32" cy="32" r="27"/>
+              <circle class="score-fill" cx="32" cy="32" r="27"/>
+            </svg>
+            <div class="score-ring-text">
+              <strong class="font-num" data-score-num>${u.score ?? 742}</strong>
+              <em>${u.score_label || "Strong"}</em>
+            </div>
+          </div>
           <div>
-            <h3>Woza score</h3>
-            <p class="muted">${u.score_caption}</p>
-            <div class="bureau-row">${IC.shield}<span>${h.bureau_line}</span></div>
+            <p class="muted">${u.score_caption || "Not a credit score"}</p>
+            <div class="bureau-row">${IC.shield}<span>${bureau}</span></div>
           </div>
         </div>
         <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Your bills</h3>
         <div class="group-list section">
-          ${bills.map(b => `
-            <button type="button" class="group-row" data-goto="${b.id}">
+          ${bills.map((b, i) => `
+            <button type="button" class="group-row bill-row" style="--i:${i}" data-goto="${b.id}">
               <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
-              <span>
+              <div class="row-text">
                 <div class="row-title">${b.name}</div>
-                <div class="row-sub">${b.amount_display}</div>
+                <div class="row-sub">${billAmountLine(b, "home")}</div>
                 <div class="row-points">${b.home_points_line}</div>
-              </span>
-              <span class="badge ${badgeClass(b, u)}">${b.home_badge}</span>
+              </div>
             </button>`).join("")}
+          ${addBillRowHtml(bills.length)}
         </div>`;
       document.querySelectorAll("#screenHome [data-goto]").forEach(btn => {
         btn.onclick = () => {
@@ -369,6 +967,7 @@
           }, 80);
         };
       });
+      bindAddBill(document.getElementById("screenHome"));
     }
 
     function renderPayments() {
@@ -378,12 +977,15 @@
         <p class="page-sub">Earn points on the essentials.</p>
         <div class="panel pay-banner section">
           <p class="muted">${p.hero_title}</p>
-          <p class="big font-num">${p.hero_amount}${p.hero_amount_suffix || ""}</p>
+          ${p.hero_you_pay_line ? `
+          <p class="big font-num">${p.hero_you_pay_line}</p>
+          ${p.hero_bills_line ? `<p class="muted" style="margin-top:4px">${p.hero_bills_line}</p>` : ""}` : `
+          <p class="big font-num">${p.hero_amount}${p.hero_amount_suffix || ""}</p>`}
           ${p.hero_earn_line ? `<p class="row-points" style="margin-top:6px">${p.hero_earn_line}</p>` : ""}
-          ${p.payable_outstanding ? `<p class="muted" style="margin-top:8px;font-size:0.78rem">${p.hero_grace_line}</p>` : ""}
         </div>
         <div class="group-list section">
           ${p.bills.map(b => paymentRow(b)).join("")}
+          ${addBillRowHtml(p.bills.length)}
         </div>
         ${p.payable_outstanding ? `<button type="button" class="btn-primary section" id="payAllBtn">Pay all through Woza</button>` : ""}`;
       if (p.payable_outstanding) {
@@ -393,6 +995,7 @@
         const btn = document.getElementById("pay-" + b.id);
         if (btn) btn.onclick = () => openPaySheet(b);
       });
+      bindAddBill(document.getElementById("screenPayments"));
     }
 
     function paymentRow(b) {
@@ -400,21 +1003,21 @@
       if (b.is_bank_debit && !b.car_verified) {
         action = `<span class="badge badge-unverified">Not verified</span>`;
       } else if (b.is_bank_debit) {
-        action = `<span class="badge badge-debit">Bank debit order, 1 Nov</span>`;
+        action = "";
       } else if (b.paid) {
         action = `<span class="badge badge-paid">Paid ✓</span>`;
       } else {
-        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 14px;font-size:0.82rem" id="pay-${b.id}">Pay</button>`;
+        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="pay-${b.id}">Pay</button>`;
       }
       return `
-        <div class="group-row" id="bill-${b.id}" style="grid-template-columns:40px 1fr auto;border-bottom:1px solid var(--line)">
+        <div class="group-row bill-row" id="bill-${b.id}">
           <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
-          <span>
+          <div class="row-text">
             <div class="row-title">${b.name}</div>
-            <div class="row-sub">${b.payment_due_line}</div>
+            <div class="row-sub">${billAmountLine(b, "pay")}</div>
             <div class="row-points">${b.points_line}</div>
-          </span>
-          ${action}
+          </div>
+          <div class="row-action">${action}</div>
         </div>`;
     }
 
@@ -445,14 +1048,14 @@
       const panel = document.getElementById("rewardsPanel");
       if (!panel) return;
       if (rewardsTab === "redeem") {
-        panel.innerHTML = `<div class="group-list">${r.redemption_options.map(o => `
-          <button type="button" class="group-row" data-opt="${o.id}" style="border-bottom:1px solid var(--line);grid-template-columns:40px 1fr 20px">
+        panel.innerHTML = `<div class="group-list redeem-list">${r.redemption_options.map(o => `
+          <button type="button" class="group-row" data-opt="${o.id}">
             <span class="icon-wrap">${IC[REDEEM_IC[o.id]] || IC.gift}</span>
-            <span>
+            <div class="row-text">
               <div class="row-title">${o.title}</div>
-              <div class="row-sub">${o.rate} · ${o.example}</div>
-              <div class="row-points">${o.your_value_line}</div>
-            </span>
+              <div class="row-value">${o.value_row}</div>
+              <div class="row-rate">${o.rate_short || o.rate}</div>
+            </div>
             ${IC.chevron}
           </button>`).join("")}</div>`;
         panel.querySelectorAll("[data-opt]").forEach(el => {
@@ -460,24 +1063,47 @@
         });
       } else if (rewardsTab === "benefits") {
         const b = r.benefits;
+        const tier = b.tier || "Gold";
+        const nextTier = b.next_tier || "Black";
         panel.innerHTML = `
           <div class="panel">
-            <h3>Your Silver tier</h3>
-            ${b.silver_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Your ${tier} tier</h3>
+            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
           </div>
           <div class="panel" style="margin-top:16px">
-            <h3>Unlock with Gold</h3>
-            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Unlock with ${nextTier}</h3>
+            ${(b.black_unlocks || []).map(t => `<div class="benefit-line">${t}</div>`).join("")}
           </div>`;
       } else {
         const b = r.benefits;
+        const tl = r.progress_timeline_label || "Last 12 months";
         panel.innerHTML = `
           <div class="panel timeline">
-            <p class="muted" style="margin-bottom:12px">Grace months: ${b.grace_months_earned} earned, ${b.grace_months_used} used · ${b.grace_months} available</p>
-            ${r.progress.map(p => `
-              <h4>${p.bill_name} · ${p.months_on_time} months on time</h4>
-              <div class="timeline-bar">${p.periods.map(() => `<span class="dot"></span>`).join("")}</div>`).join("")}
+            <p class="muted" style="margin-bottom:8px">Grace months: ${b.grace_months_earned} earned, ${b.grace_months_used} used · ${b.grace_months} available</p>
+            ${(r.progress || []).map((p, i) => `
+              <div class="progress-item${progressOpen === i ? " open" : ""}">
+                <button type="button" class="progress-head" data-progress="${i}">
+                  <span class="icon-wrap">${IC[p.category] || IC.rent}</span>
+                  <span class="row-text">
+                    <div class="row-title">${p.bill_name}</div>
+                    <div class="row-sub">${p.months_on_time} months on time</div>
+                  </span>
+                  ${IC.chevron}
+                </button>
+                ${progressOpen === i ? `
+                <p class="cal-caption">${tl}</p>
+                <div class="cal-grid">${(p.months || []).map(m => `
+                  <div class="cal-cell ${m.status}"><span class="mo">${m.label}</span><span class="mark">${m.mark}</span></div>`).join("")}
+                </div>` : ""}
+              </div>`).join("")}
           </div>`;
+        panel.querySelectorAll("[data-progress]").forEach(btn => {
+          btn.onclick = () => {
+            const i = +btn.dataset.progress;
+            progressOpen = progressOpen === i ? -1 : i;
+            renderRewardsPanel();
+          };
+        });
       }
     }
 
@@ -489,8 +1115,8 @@
         <div class="panel" style="text-align:center;padding:24px 16px 16px">
           <div class="avatar-init">${u.initials}</div>
           <h3 style="font-family:Sora,sans-serif">${u.name}</h3>
-          <p class="muted" style="margin-top:6px">${u.phone}</p>
           <p style="color:var(--verified);margin-top:8px;font-size:0.88rem">Verified member since ${u.member_since}</p>
+          <p class="muted" style="margin-top:6px;font-size:0.88rem">${u.status || "Gold"} tier · ${u.months_to_next_tier ?? 12} months to ${u.next_tier || "Black"}</p>
         </div>
         <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Linked bank</h3>
         <div class="group-list section">
@@ -500,11 +1126,12 @@
           </button>
         </div>
         <div class="profile-actions section">
-          <a href="/lender">Lender view (demo bureau)</a>
+          <button type="button" class="btn-secondary" id="signOutBtn">Sign out</button>
           <button type="button" class="danger" id="resetBtn">Reset demo</button>
         </div>
         <p class="demo-note">Demo mode. No real money moves.</p>`;
       document.getElementById("resetBtn").onclick = openResetSheet;
+      document.getElementById("signOutBtn").onclick = () => withBusy(signOut, { toast: false });
       document.getElementById("linkedBankBtn").onclick = openBankSheet;
     }
 
@@ -527,18 +1154,60 @@
 
     function renderAll() {
       if (!state) return;
-      displayPoints = state.user.available_points;
+      displayPoints = userPoints(state.user);
+      displayPointsInitialized = true;
       renderHome();
       renderPayments();
       renderRewards();
       renderProfile();
+      bindMembershipCards();
+      playHomeIntro(state.user);
+    }
+
+    function goHomeImmediate() {
+      closeSheet();
+      ["Home", "Rewards", "Payments", "Profile"].forEach((s) => {
+        const el = document.getElementById("screen" + s);
+        if (!el) return;
+        const home = s === "Home";
+        el.classList.toggle("hidden", !home);
+        el.classList.remove("tab-enter", "tab-leave", "tab-leave-active");
+      });
+      document.querySelectorAll("#tabNav button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === "home");
+      });
     }
 
     function showTab(name) {
-      ["Home","Payments","Rewards","Profile"].forEach((s, i) => {
-        document.getElementById("screen" + s).classList.toggle("hidden", ["home","payments","rewards","profile"][i] !== name);
-      });
+      closeSheet();
+      const ids = ["home", "rewards", "payments", "profile"];
+      const next = document.getElementById("screen" + ["Home","Rewards","Payments","Profile"][ids.indexOf(name)]);
+      const cur = [...document.querySelectorAll("#appView .screen")].find((el) => !el.classList.contains("hidden") && el !== next);
       document.querySelectorAll("#tabNav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+      if (!next || next === cur) {
+        if (next) next.classList.remove("hidden");
+        return;
+      }
+      const others = ["Home","Rewards","Payments","Profile"].map(s => document.getElementById("screen" + s)).filter(el => el && el !== next && el !== cur);
+      others.forEach(el => { el.classList.add("hidden"); el.classList.remove("tab-enter", "tab-leave", "tab-leave-active"); });
+      if (!cur || prefersReduced()) {
+        if (cur) cur.classList.add("hidden");
+        next.classList.remove("hidden", "tab-enter", "tab-leave", "tab-leave-active");
+        return;
+      }
+      next.classList.remove("hidden");
+      next.classList.add("tab-enter");
+      cur.classList.add("tab-leave");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          next.classList.remove("tab-enter");
+          cur.classList.add("tab-leave-active");
+        });
+      });
+      setTimeout(() => {
+        cur.classList.add("hidden");
+        cur.classList.remove("tab-leave", "tab-leave-active");
+      }, 150);
     }
 
     function openSheet(html) {
@@ -549,20 +1218,29 @@
     function closeSheet() {
       document.getElementById("sheet").classList.remove("open");
       document.getElementById("sheetBackdrop").classList.remove("open");
+      document.getElementById("sheetBody").innerHTML = "";
     }
 
-    async function withBusy(fn) {
+    async function withBusy(fn, opts = {}) {
       if (busy) return;
       busy = true;
       document.getElementById("appView").classList.add("busy");
-      try { await fn(); } catch (e) { toast(e.message || "Something went wrong"); }
-      finally { busy = false; document.getElementById("appView").classList.remove("busy"); }
+      try {
+        await fn();
+      } catch (e) {
+        if (opts.toast !== false) toast(apiErrorMessage(e));
+        throw e;
+      } finally {
+        busy = false;
+        document.getElementById("appView").classList.remove("busy");
+      }
     }
 
     function openPaySheet(bill) {
       openSheet(`
         <h3>${bill.pay_sheet_title}</h3>
-        <p class="muted">1 point per rand on time · ${bill.potential_display}</p>
+        ${bill.pay_sheet_detail ? `<p class="muted" style="margin-top:8px">${bill.pay_sheet_detail}</p>` : ""}
+        ${bill.pay_sheet_points_line ? `<p class="row-points" style="margin-top:8px">${bill.pay_sheet_points_line}</p>` : ""}
         <div class="sheet-actions">
           <button type="button" class="btn-primary" id="confirmPay">Confirm</button>
           <button type="button" class="btn-secondary" id="cancelPay">Cancel</button>
@@ -576,9 +1254,14 @@
         renderAll();
         animatePoints(prev, state.user.available_points);
         const pts = data.event?.points_added || 0;
+        const ev = data.event || {};
+        if (navigator.vibrate) navigator.vibrate(12);
         openSheet(`
-          <h3>Paid</h3>
-          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">+${fmtPts(pts)}</p>
+          <svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg>
+          <h3>${ev.title || "Paid"}</h3>
+          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">${ev.points_line || `+${fmtPts(pts)} points`}</p>
+          ${ev.worth_rent_line ? `<p class="row-points" style="margin-top:8px">${ev.worth_rent_line}</p>` : ""}
+          <p class="muted" style="margin-top:8px">${ev.new_balance_line || ""}</p>
           <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
         document.getElementById("donePay").onclick = closeSheet;
       });
@@ -606,24 +1289,39 @@
     function openRedeemSheet(opt) {
       const o = state.rewards.redemption_options.find(x => x.id === opt);
       const pts = state.user.available_points;
+      const rate = o.rate_multiplier ?? 1.5;
       openSheet(`
         <h3>${o.title}</h3>
-        <p class="muted">${o.your_value_line}</p>
-        <label class="muted" for="ptsIn" style="margin-top:12px">Points to redeem</label>
-        <input type="number" id="ptsIn" min="1000" step="1000" value="${pts}" style="margin-top:8px" />
-        <p class="muted" id="valOut" style="margin-top:10px"></p>
+        <p class="sheet-value" id="valOut">${redeemValueLine(opt, pts, rate)}</p>
+        <label class="muted" for="ptsIn">Points</label>
+        <input type="number" id="ptsIn" min="1" value="${pts}" style="margin-top:8px" />
+        <div class="redeem-chips">
+          <button type="button" class="redeem-chip active" data-chip="all">All</button>
+          <button type="button" class="redeem-chip" data-chip="half">Half</button>
+        </div>
         <div class="sheet-actions">
-          <button type="button" class="btn-primary" id="confirmRedeem">Confirm</button>
-          <button type="button" class="btn-secondary" id="cancelRedeem">Cancel</button>
+          <button type="button" class="btn-primary" id="confirmRedeem"${pts > 0 ? "" : " disabled"}>Confirm</button>
         </div>`);
-      const upd = () => {
-        const n = +document.getElementById("ptsIn").value || 0;
-        const cents = Math.floor(n * RATES[opt]);
-        document.getElementById("valOut").textContent = `Value: R${(cents/100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, " ")}`;
+      const input = document.getElementById("ptsIn");
+      const chips = [...document.querySelectorAll(".redeem-chip")];
+      const upd = (source) => {
+        const n = +input.value || 0;
+        document.getElementById("valOut").textContent = redeemValueLine(opt, n, rate);
+        chips.forEach((c) => {
+          const kind = c.dataset.chip;
+          const match = (kind === "all" && n === pts) || (kind === "half" && n === Math.floor(pts / 2) && pts > 0);
+          c.classList.toggle("active", source ? kind === source : match);
+        });
+        document.getElementById("confirmRedeem").disabled = n <= 0 || n > pts;
       };
-      document.getElementById("ptsIn").oninput = upd;
-      upd();
-      document.getElementById("cancelRedeem").onclick = closeSheet;
+      input.oninput = () => upd(null);
+      chips.forEach((c) => {
+        c.onclick = () => {
+          input.value = c.dataset.chip === "half" ? Math.floor(pts / 2) : pts;
+          upd(c.dataset.chip);
+        };
+      });
+      upd("all");
       document.getElementById("confirmRedeem").onclick = () => withBusy(async () => {
         const points = +document.getElementById("ptsIn").value;
         const prev = state.user.available_points;
@@ -632,9 +1330,10 @@
         state = data;
         renderAll();
         animatePoints(prev, state.user.available_points);
-        let msg = `${data.event.value_display} redeemed`;
-        if (opt === "rent") msg = `${data.event.value_display} will come off your 1 Nov rent`;
-        openSheet(`<h3>Redeemed</h3><p class="muted">${msg}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
+        const msg = data.event?.success_message
+          || `${data.event?.value_display || ""} redeemed`;
+        if (navigator.vibrate) navigator.vibrate(12);
+        openSheet(`<svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg><h3>Redeemed</h3><p class="muted">${msg}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
         document.getElementById("doneR").onclick = closeSheet;
       });
     }
@@ -642,24 +1341,73 @@
     function openResetSheet() {
       openSheet(`
         <h3>Reset demo?</h3>
-        <p class="muted">Restores Thandi's starting balances and due bills.</p>
+        <p class="muted">Restores starting balances and due bills. You stay signed in.</p>
         <div class="sheet-actions">
           <button type="button" class="btn-primary" id="confirmReset">Reset demo</button>
           <button type="button" class="btn-secondary" id="cancelReset">Cancel</button>
         </div>`);
       document.getElementById("cancelReset").onclick = closeSheet;
       document.getElementById("confirmReset").onclick = () => withBusy(async () => {
-        state = await api("/api/reset", { method: "POST", body: JSON.stringify({}) });
+        let savedName = "";
+        try { savedName = sessionStorage.getItem("woza.displayName") || ""; } catch { /* ignore */ }
+        savedName = savedName || (state && state.user && state.user.name) || "";
+        state = await api("/api/reset", { method: "POST", body: JSON.stringify({ name: savedName }) });
         rewardsTab = "redeem";
+        armHomeIntro();
+        try { sessionStorage.removeItem("woza.flipHint"); } catch { /* ignore */ }
         closeSheet();
         renderAll();
         toast("Demo reset");
       });
     }
 
-    async function login(phone) {
-      await api("/api/login", { method: "POST", body: JSON.stringify({ phone }) });
+    function lastDisplayName() {
+      try { return sessionStorage.getItem("woza.displayName") || ""; } catch { return ""; }
+    }
+
+    function renderLoginHint() {
+      const wrap = document.getElementById("nameHint");
+      if (!wrap) return;
+      wrap.replaceChildren();
+      const last = lastDisplayName();
+      if (!last) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "name-chip";
+      btn.id = "useLastName";
+      btn.textContent = "Use " + last;
+      btn.onclick = () => {
+        const input = document.getElementById("displayName");
+        input.value = last;
+        input.focus();
+      };
+      wrap.appendChild(btn);
+    }
+
+    async function signOut() {
+      closeSheet();
+      try { await api("/api/logout", { method: "POST", body: "{}" }); } catch { /* still leave */ }
+      state = null;
+      displayPointsInitialized = false;
+      rewardsTab = "redeem";
+      homeIntroPlayed = false;
+      document.getElementById("appView").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
+      document.getElementById("displayName").value = "";
+      document.getElementById("loginErr").textContent = "";
+      renderLoginHint();
+      goHomeImmediate();
+      document.getElementById("displayName").focus();
+    }
+
+    async function login(name) {
+      const n = (name || "").trim();
+      if (!n) throw new Error("Enter your name");
+      try { sessionStorage.setItem("woza.displayName", n); } catch { /* ignore */ }
+      await api("/api/login", { method: "POST", body: JSON.stringify({ name: n }) });
       state = await api("/api/me");
+      armHomeIntro();
+      goHomeImmediate();
       document.getElementById("loginView").classList.add("hidden");
       document.getElementById("appView").classList.remove("hidden");
       renderAll();
@@ -670,25 +1418,80 @@
       const btn = e.target.closest("button[data-tab]");
       if (btn) showTab(btn.dataset.tab);
     });
-    document.getElementById("loginBtn").onclick = () => withBusy(async () => {
+    document.getElementById("loginBtn").onclick = async () => {
       document.getElementById("loginErr").textContent = "";
-      try { await login(document.getElementById("phone").value.trim() || "072 418 3390"); }
-      catch { document.getElementById("loginErr").textContent = "Login failed"; }
-    });
-    document.getElementById("demoBtn").onclick = () => withBusy(async () => {
-      document.getElementById("phone").value = "072 418 3390";
-      await login("072 418 3390");
+      try {
+        await withBusy(
+          () => login(document.getElementById("displayName").value),
+          { toast: false }
+        );
+      } catch (e) {
+        document.getElementById("loginErr").textContent = apiErrorMessage(e);
+      }
+    };
+    document.getElementById("displayName").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("loginBtn").click();
     });
 
     async function boot() {
+      const bootEl = document.getElementById("bootStatus");
+      bootEl.style.display = "block";
       try {
         state = await api("/api/me");
+        goHomeImmediate();
         document.getElementById("loginView").classList.add("hidden");
         document.getElementById("appView").classList.remove("hidden");
         renderAll();
-      } catch { /* login */ }
+      } catch {
+        renderLoginHint();
+      }
+      finally { bootEl.style.display = "none"; }
     }
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+    function useServiceWorker() {
+      const h = location.hostname;
+      if (h === "localhost" || h === "127.0.0.1") return false;
+      if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+      if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+      if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+      return true;
+    }
+    if ("serviceWorker" in navigator) {
+      if (useServiceWorker()) {
+        navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+      } else {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((r) => r.unregister());
+        });
+      }
+    }
+    (function bindTaps() {
+      const sel = "button, .group-row, .linked-row, .tab";
+      document.addEventListener("pointerdown", (e) => {
+        if (prefersReduced()) return;
+        const el = e.target.closest(sel);
+        if (!el || el.closest("[data-card-flip]")) return;
+        el.classList.add("tap-press", "is-press");
+        el.classList.remove("is-release");
+        if (el.classList.contains("btn-primary")) {
+          const r = el.getBoundingClientRect();
+          const span = document.createElement("span");
+          span.className = "btn-ripple";
+          span.style.left = (e.clientX - r.left) + "px";
+          span.style.top = (e.clientY - r.top) + "px";
+          el.appendChild(span);
+          setTimeout(() => span.remove(), 480);
+        }
+      });
+      const up = () => {
+        document.querySelectorAll(".is-press").forEach((el) => {
+          el.classList.remove("is-press");
+          el.classList.add("is-release");
+          setTimeout(() => el.classList.remove("is-release"), 280);
+        });
+      };
+      document.addEventListener("pointerup", up);
+      document.addEventListener("pointercancel", up);
+    })();
     boot();
   </script>
 </body>

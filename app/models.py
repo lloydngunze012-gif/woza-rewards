@@ -36,6 +36,7 @@ class User(Base):
     grace_months = Column(Integer, default=0)
     grace_months_earned = Column(Integer, default=0)
     demo_version = Column(Integer, default=0)
+    bank_consent_active = Column(Boolean, default=True)
 
     bills = relationship("Bill", back_populates="user")
     redemptions = relationship("Redemption", back_populates="user")
