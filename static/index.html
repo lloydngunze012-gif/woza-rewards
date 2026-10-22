@@ -23,16 +23,9 @@
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=optional" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=optional" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
   <link rel="stylesheet" href="/static/woza-card.css" />
-  <script>
-    try {
-      if (sessionStorage.getItem("woza.sessionLive") === "1") {
-        document.documentElement.classList.add("session-restore");
-      }
-    } catch (e) { /* ignore */ }
-  </script>
   <style>
     :root {
       --bg: #F6F4FB;
@@ -57,13 +50,12 @@
       --t-flip: 600ms;
       --t-sweep: 700ms;
       --t-score: 1000ms;
-      --t-slide: 250ms;
       --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
       --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow-x: hidden; }
+    html, body { height: 100%; }
     body {
       font-family: "DM Sans", system-ui, sans-serif;
       background: var(--bg);
@@ -74,7 +66,6 @@
     .phone {
       max-width: 390px; min-height: 100%; margin: 0 auto; position: relative;
       padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
-      overflow-x: hidden;
     }
     .hidden { display: none !important; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
@@ -83,7 +74,6 @@
     .login-wrap {
       min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
       padding: 32px 20px; max-width: 390px; margin: 0 auto;
-      overflow-x: hidden;
     }
     .login-card {
       background: var(--surface); border-radius: 16px; padding: 20px;
@@ -351,59 +341,13 @@
     @keyframes ripple {
       to { transform: translate(-50%, -50%) scale(12); opacity: 0; }
     }
-    .app-stage {
-      position: relative;
-      width: 100%;
-      max-width: 390px;
-      margin: 0 auto;
-      min-height: 100%;
-      overflow-x: hidden;
-    }
-    #loginView, #appView {
-      width: 100%;
-      transition: transform var(--t-slide) var(--ease-out);
-    }
-    html:not(.in-app) #appView:not(.hidden) {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      transform: translateX(100%);
-    }
-    html.in-app #loginView:not(.hidden) {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      transform: translateX(-100%);
+    #appView .screen { transition: opacity var(--t-fast) ease-out; }
+    #appView .screen.tab-enter { opacity: 0; }
+    #appView .screen.tab-leave {
+      position: absolute; left: 0; right: 0; top: 0; width: 100%;
       pointer-events: none;
     }
-    html.in-app #appView { transform: translateX(0); }
-    html.session-restore #loginView { display: none !important; }
-    html.session-restore #appView.hidden { display: flex !important; transform: none; }
-    html:not(.js-ready) #loginView,
-    html:not(.js-ready) #appView,
-    html:not(.js-ready) .screen {
-      transition: none !important;
-    }
-    #appView.phone {
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-    .screen-stack {
-      position: relative;
-      width: 100%;
-      overflow-x: hidden;
-      flex: 1 1 auto;
-    }
-    .screen-stack .screen.is-pane {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      pointer-events: none;
-    }
+    #appView .screen.tab-leave-active { opacity: 0; }
     .sheet-check { width: 56px; height: 56px; display: block; margin: 0 auto 12px; color: var(--verified); }
     .sheet-check-mark {
       fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
@@ -486,7 +430,7 @@
       .home-intro .score-fill { stroke-dashoffset: var(--score-offset, 21.54) !important; }
       .sheet-check-mark { stroke-dashoffset: 0 !important; }
       .is-press, .is-release, .tap-press { transform: none !important; transition: none !important; }
-      #loginView, #appView, .screen { transition: none !important; }
+      #appView .screen { transition: none !important; }
     }
     .profile-actions { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .profile-actions a, .profile-actions button {
@@ -569,10 +513,6 @@
         max-width: none; width: 100%; height: 100%; min-height: 0;
         overflow: hidden; padding-bottom: 0;
       }
-      .app-stage { height: 100%; min-height: 0; max-width: none; overflow: hidden; }
-      .phone .screen-stack {
-        height: 100%; overflow: hidden;
-      }
       .phone .screen {
         height: 100%; overflow-x: hidden; overflow-y: auto;
         padding-bottom: calc(var(--nav-h) + 16px);
@@ -622,7 +562,6 @@
     </aside>
     <div class="phone-frame">
       <div class="phone-screen">
-  <div id="appStage" class="app-stage">
   <div id="loginView" class="login-wrap">
     <div class="login-brand">
       <div class="login-mark" aria-hidden="true"><span>W</span></div>
@@ -633,28 +572,24 @@
       <label for="displayName">Name</label>
       <input id="displayName" type="text" placeholder="Your name" autocomplete="name" />
       <p class="login-privacy">Everything you see is a private demo. No real money moves.</p>
-      <div class="name-hint" id="nameHint">
-        <button type="button" class="name-chip" id="continueAsThandi">Or continue as Thandi</button>
-      </div>
+      <div class="name-hint" id="nameHint"></div>
       <button type="button" class="btn-primary" id="loginBtn">Continue</button>
       <p class="err" id="loginErr"></p>
+      <p class="muted" id="bootStatus" style="margin-top:12px;font-size:0.82rem;display:none">Connecting…</p>
     </div>
   </div>
 
   <div id="appView" class="phone hidden">
-    <div id="screenStack" class="screen-stack">
-    <div id="screenHome" class="screen is-current"></div>
+    <div id="screenHome" class="screen"></div>
     <div id="screenRewards" class="screen hidden"></div>
     <div id="screenPayments" class="screen hidden"></div>
     <div id="screenProfile" class="screen hidden"></div>
-    </div>
     <nav class="nav" id="tabNav">
       <button type="button" data-tab="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>Home</button>
       <button type="button" data-tab="rewards"><svg viewBox="0 0 24 24"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>Rewards</button>
       <button type="button" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
       <button type="button" data-tab="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/></svg>Profile</button>
     </nav>
-  </div>
   </div>
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
@@ -766,18 +701,7 @@
         </div>`);
     }
 
-    document.documentElement.classList.add("js-ready");
-
     const SLOGAN = "Pay today. Earn tomorrow.";
-    const SESSION_LIVE = "woza.sessionLive";
-    const SLIDE_MS = 250;
-    const TAB_ORDER = ["home", "rewards", "payments", "profile"];
-    const TAB_SCREEN = {
-      home: "screenHome",
-      rewards: "screenRewards",
-      payments: "screenPayments",
-      profile: "screenProfile",
-    };
     let state = null;
     let busy = false;
     let rewardsTab = "redeem";
@@ -787,19 +711,8 @@
     let progressOpen = 0;
     let homeIntroPlayed = false;
     let homeIntroTimers = [];
-    let currentTab = "home";
-    let tabLock = false;
-    let tabQueued = null;
-    let tabTimer = 0;
     const SCORE_MAX = 850;
     const SCORE_C = 169.65;
-
-    function markSessionLive() {
-      try { sessionStorage.setItem(SESSION_LIVE, "1"); } catch { /* ignore */ }
-    }
-    function clearSessionLive() {
-      try { sessionStorage.removeItem(SESSION_LIVE); } catch { /* ignore */ }
-    }
 
     function fmtPts(n) { return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
 
@@ -1258,9 +1171,8 @@
       });
     }
 
-    function renderAll(opts) {
+    function renderAll() {
       if (!state) return;
-      opts = opts || {};
       displayPoints = userPoints(state.user);
       displayPointsInitialized = true;
       renderHome();
@@ -1268,121 +1180,53 @@
       renderRewards();
       renderProfile();
       bindMembershipCards();
-      if (!opts.deferIntro) playHomeIntro(state.user);
+      playHomeIntro(state.user);
     }
 
-    function resetTabPanes() {
-      const stack = document.getElementById("screenStack");
-      if (stack) stack.style.height = "";
-      Object.keys(TAB_SCREEN).forEach((name) => {
-        const el = document.getElementById(TAB_SCREEN[name]);
+    function goHomeImmediate() {
+      closeSheet();
+      ["Home", "Rewards", "Payments", "Profile"].forEach((s) => {
+        const el = document.getElementById("screen" + s);
         if (!el) return;
-        el.classList.toggle("hidden", name !== "home");
-        el.classList.toggle("is-current", name === "home");
-        el.classList.remove("is-pane");
-        el.style.transform = "";
-        el.style.transition = "";
+        const home = s === "Home";
+        el.classList.toggle("hidden", !home);
+        el.classList.remove("tab-enter", "tab-leave", "tab-leave-active");
       });
-      currentTab = "home";
-      tabLock = false;
-      tabQueued = null;
-      if (tabTimer) { clearTimeout(tabTimer); tabTimer = 0; }
       document.querySelectorAll("#tabNav button").forEach((b) => {
         b.classList.toggle("active", b.dataset.tab === "home");
       });
     }
 
-    function goHomeImmediate() {
-      closeSheet();
-      resetTabPanes();
-    }
-
-    function finishTabSwitch(fromEl, toEl, toName) {
-      if (fromEl) {
-        fromEl.classList.add("hidden");
-        fromEl.classList.remove("is-pane", "is-current");
-        fromEl.style.transform = "";
-        fromEl.style.transition = "";
-      }
-      toEl.classList.add("is-current");
-      toEl.classList.remove("is-pane", "hidden");
-      toEl.style.transform = "";
-      toEl.style.transition = "";
-      const stack = document.getElementById("screenStack");
-      if (stack) stack.style.height = "";
-      currentTab = toName;
-      tabLock = false;
-      if (tabQueued && tabQueued !== currentTab) {
-        const next = tabQueued;
-        tabQueued = null;
-        showTab(next);
-      } else {
-        tabQueued = null;
-      }
-    }
-
     function showTab(name) {
       closeSheet();
-      if (!TAB_SCREEN[name]) return;
-      document.querySelectorAll("#tabNav button").forEach((b) => {
-        b.classList.toggle("active", b.dataset.tab === name);
+      const ids = ["home", "rewards", "payments", "profile"];
+      const next = document.getElementById("screen" + ["Home","Rewards","Payments","Profile"][ids.indexOf(name)]);
+      const cur = [...document.querySelectorAll("#appView .screen")].find((el) => !el.classList.contains("hidden") && el !== next);
+      document.querySelectorAll("#tabNav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+      if (!next || next === cur) {
+        if (next) next.classList.remove("hidden");
+        return;
+      }
+      const others = ["Home","Rewards","Payments","Profile"].map(s => document.getElementById("screen" + s)).filter(el => el && el !== next && el !== cur);
+      others.forEach(el => { el.classList.add("hidden"); el.classList.remove("tab-enter", "tab-leave", "tab-leave-active"); });
+      if (!cur || prefersReduced()) {
+        if (cur) cur.classList.add("hidden");
+        next.classList.remove("hidden", "tab-enter", "tab-leave", "tab-leave-active");
+        return;
+      }
+      next.classList.remove("hidden");
+      next.classList.add("tab-enter");
+      cur.classList.add("tab-leave");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          next.classList.remove("tab-enter");
+          cur.classList.add("tab-leave-active");
+        });
       });
-      if (name === currentTab) {
-        const el = document.getElementById(TAB_SCREEN[name]);
-        if (el) el.classList.remove("hidden");
-        return;
-      }
-      if (tabLock) {
-        tabQueued = name;
-        return;
-      }
-      const fromEl = document.getElementById(TAB_SCREEN[currentTab]);
-      const toEl = document.getElementById(TAB_SCREEN[name]);
-      if (!toEl) return;
-      const fromIdx = TAB_ORDER.indexOf(currentTab);
-      const toIdx = TAB_ORDER.indexOf(name);
-      const dir = toIdx > fromIdx ? 1 : -1;
-
-      window.scrollTo(0, 0);
-      toEl.scrollTop = 0;
-
-      if (!fromEl || prefersReduced()) {
-        if (fromEl) {
-          fromEl.classList.add("hidden");
-          fromEl.classList.remove("is-current", "is-pane");
-        }
-        toEl.classList.remove("hidden");
-        toEl.classList.add("is-current");
-        currentTab = name;
-        return;
-      }
-
-      tabLock = true;
-      const stack = document.getElementById("screenStack");
-      const holdH = fromEl.offsetHeight;
-      if (stack) stack.style.height = holdH + "px";
-
-      toEl.classList.remove("hidden");
-      fromEl.classList.add("is-pane");
-      toEl.classList.add("is-pane");
-      fromEl.style.transition = "none";
-      toEl.style.transition = "none";
-      fromEl.style.transform = "translateX(0)";
-      toEl.style.transform = "translateX(" + (dir * 100) + "%)";
-      void toEl.offsetWidth;
-      fromEl.style.transition = "transform var(--t-slide) var(--ease-out)";
-      toEl.style.transition = "transform var(--t-slide) var(--ease-out)";
-      fromEl.style.transform = "translateX(" + (-dir * 100) + "%)";
-      toEl.style.transform = "translateX(0)";
-
-      const done = (ev) => {
-        if (ev && ev.propertyName && ev.propertyName !== "transform") return;
-        toEl.removeEventListener("transitionend", done);
-        if (tabTimer) { clearTimeout(tabTimer); tabTimer = 0; }
-        finishTabSwitch(fromEl, toEl, name);
-      };
-      toEl.addEventListener("transitionend", done);
-      tabTimer = setTimeout(() => done(), SLIDE_MS + 40);
+      setTimeout(() => {
+        cur.classList.add("hidden");
+        cur.classList.remove("tab-leave", "tab-leave-active");
+      }, 150);
     }
 
     function openSheet(html) {
@@ -1400,8 +1244,6 @@
       if (busy) return;
       busy = true;
       document.getElementById("appView").classList.add("busy");
-      const loginBtn = document.getElementById("loginBtn");
-      if (loginBtn) loginBtn.disabled = true;
       try {
         await fn();
       } catch (e) {
@@ -1410,7 +1252,6 @@
       } finally {
         busy = false;
         document.getElementById("appView").classList.remove("busy");
-        if (loginBtn) loginBtn.disabled = false;
       }
     }
 
@@ -1561,59 +1402,18 @@
         };
         wrap.appendChild(btn);
       }
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "name-chip";
-      chip.id = "continueAsThandi";
-      chip.textContent = "Or continue as Thandi";
-      chip.onclick = () => {
-        document.getElementById("displayName").value = "Thandi";
-        document.getElementById("loginBtn").click();
-      };
-      wrap.appendChild(chip);
-    }
-
-    function showLoginPane() {
-      document.documentElement.classList.remove("in-app", "session-restore");
-      const login = document.getElementById("loginView");
-      const app = document.getElementById("appView");
-      login.classList.remove("hidden");
-      login.style.transform = "";
-      app.classList.add("hidden");
-      app.style.transform = "";
-    }
-
-    function waitSlide(el) {
-      return new Promise((resolve) => {
-        if (prefersReduced()) {
-          resolve();
-          return;
-        }
-        let done = false;
-        const finish = (ev) => {
-          if (done) return;
-          if (ev && ev.propertyName && ev.propertyName !== "transform") return;
-          done = true;
-          el.removeEventListener("transitionend", finish);
-          resolve();
+      if (!last || last.toLowerCase() !== "thandi") {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "name-chip";
+        chip.id = "continueAsThandi";
+        chip.textContent = "Continue as Thandi";
+        chip.onclick = () => {
+          document.getElementById("displayName").value = "Thandi";
+          document.getElementById("loginBtn").click();
         };
-        el.addEventListener("transitionend", finish);
-        setTimeout(() => finish(), SLIDE_MS + 40);
-      });
-    }
-
-    async function slideLoginToApp() {
-      const login = document.getElementById("loginView");
-      const app = document.getElementById("appView");
-      app.classList.remove("hidden");
-      void app.offsetWidth;
-      document.documentElement.classList.add("in-app");
-      if (prefersReduced()) {
-        login.classList.add("hidden");
-        return;
+        wrap.appendChild(chip);
       }
-      await waitSlide(app);
-      login.classList.add("hidden");
     }
 
     async function signOut() {
@@ -1623,8 +1423,8 @@
       displayPointsInitialized = false;
       rewardsTab = "redeem";
       homeIntroPlayed = false;
-      clearSessionLive();
-      showLoginPane();
+      document.getElementById("appView").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
       document.getElementById("displayName").value = "";
       document.getElementById("loginErr").textContent = "";
       renderLoginHint();
@@ -1638,12 +1438,11 @@
       try { sessionStorage.setItem("woza.displayName", n); } catch { /* ignore */ }
       await api("/api/login", { method: "POST", body: JSON.stringify({ name: n }) });
       state = await api("/api/me");
-      markSessionLive();
       armHomeIntro();
       goHomeImmediate();
-      renderAll({ deferIntro: true });
-      await slideLoginToApp();
-      playHomeIntro(state.user);
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("appView").classList.remove("hidden");
+      renderAll();
     }
 
     document.getElementById("sheetBackdrop").onclick = closeSheet;
@@ -1667,19 +1466,18 @@
     });
 
     async function boot() {
+      const bootEl = document.getElementById("bootStatus");
+      bootEl.style.display = "block";
       try {
         state = await api("/api/me");
-        markSessionLive();
-        document.documentElement.classList.add("in-app", "session-restore");
         goHomeImmediate();
         document.getElementById("loginView").classList.add("hidden");
         document.getElementById("appView").classList.remove("hidden");
         renderAll();
       } catch {
-        clearSessionLive();
-        showLoginPane();
         renderLoginHint();
       }
+      finally { bootEl.style.display = "none"; }
     }
     function useServiceWorker() {
       const h = location.hostname;
