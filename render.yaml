@@ -3,6 +3,7 @@ services:
     name: woza-rewards
     runtime: python
     plan: starter
+    region: oregon
     # OG JPEG is committed at static/og.jpg. Do not install Playwright or Chromium.
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
