@@ -59,6 +59,11 @@ def sign_in(page: Page, name: str = DEMO_NAME) -> None:
     page.locator("#displayName").fill(name)
     page.locator("#loginBtn").click(force=True)
     page.wait_for_selector("#appView:not(.hidden)", timeout=15_000)
+    page.wait_for_function(
+        "() => document.documentElement.classList.contains('in-app')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(280)
 
 
 def wait_settled(page: Page) -> None:
@@ -134,6 +139,7 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
             page.wait_for_selector("label[for='displayName']", timeout=10_000),
             page.wait_for_selector("text=Everything you see is a private demo. No real money moves.", timeout=10_000),
             page.wait_for_selector("#continueAsThandi", timeout=10_000),
+            page.wait_for_selector("text=Or continue as Thandi", timeout=10_000),
         )[0],
     )
 
