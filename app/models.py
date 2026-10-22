@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     String,
     create_engine,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
 
@@ -37,6 +38,8 @@ class User(Base):
     grace_months_earned = Column(Integer, default=0)
     demo_version = Column(Integer, default=0)
     bank_consent_active = Column(Boolean, default=True)
+    session_key = Column(String, unique=True, index=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
 
     bills = relationship("Bill", back_populates="user")
     redemptions = relationship("Redemption", back_populates="user")
@@ -99,8 +102,19 @@ class Redemption(Base):
     user = relationship("User", back_populates="redemptions")
 
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False, "timeout": 30},
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+@event.listens_for(engine, "connect")
+def _sqlite_pragmas(dbapi_conn, _connection_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 def init_db() -> None:

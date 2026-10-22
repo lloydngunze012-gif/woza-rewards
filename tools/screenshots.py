@@ -132,6 +132,8 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
             page.wait_for_selector(".login-mark", timeout=10_000),
             page.wait_for_selector("#displayName", timeout=10_000),
             page.wait_for_selector("label[for='displayName']", timeout=10_000),
+            page.wait_for_selector("text=Everything you see is a private demo. No real money moves.", timeout=10_000),
+            page.wait_for_selector("#continueAsThandi", timeout=10_000),
         )[0],
     )
 
@@ -336,6 +338,84 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
     run_step(results, key("15_card_back"), page, out_dir, "15_card_back", card_back, full_page=False)
 
 
+def phone_context_kwargs() -> dict:
+    return {
+        "viewport": {"width": 390, "height": 844},
+        "device_scale_factor": 3,
+        "user_agent": IPHONE_14_UA,
+        "is_mobile": True,
+        "has_touch": True,
+    }
+
+
+def pay_rent(page: Page) -> None:
+    page.click('nav#tabNav button[data-tab="payments"]')
+    page.wait_for_selector("#screenPayments:not(.hidden)", timeout=10_000)
+    page.locator("#screenPayments button:has-text('Pay')").first.click()
+    page.wait_for_selector("#sheet.open", timeout=10_000)
+    page.wait_for_selector("#confirmPay", timeout=10_000)
+    with page.expect_response(lambda r: "/api/pay" in r.url and r.request.method == "POST"):
+        js_click(page, "confirmPay")
+    page.wait_for_function(
+        "() => document.querySelector('#sheetBody h3')?.textContent === 'Rent paid'",
+        timeout=15_000,
+    )
+
+
+def run_isolation_step(browser, results: dict[str, str]) -> None:
+    step_key = "isolation/two_contexts"
+    out_dir = OUT_DIR / "isolation"
+    ctx1 = ctx2 = None
+    try:
+        ctx1 = browser.new_context(**phone_context_kwargs())
+        ctx2 = browser.new_context(**phone_context_kwargs())
+        page1 = ctx1.new_page()
+        page2 = ctx2.new_page()
+        for pg in (page1, page2):
+            pg.set_default_navigation_timeout(20_000)
+            pg.set_default_timeout(15_000)
+
+        page1.goto(BASE_URL, wait_until="domcontentloaded")
+        sign_in(page1, "Thandi")
+        page1.wait_for_selector("#screenHome .mem-tier:has-text('Gold')", timeout=10_000)
+
+        page2.goto(BASE_URL, wait_until="domcontentloaded")
+        sign_in(page2, "Thandi")
+        page2.wait_for_selector("#screenHome .mem-tier:has-text('Gold')", timeout=10_000)
+
+        pay_rent(page1)
+
+        page2.click('nav#tabNav button[data-tab="payments"]')
+        page2.wait_for_selector("#screenPayments:not(.hidden)", timeout=10_000)
+        page2.wait_for_selector(
+            "#screenPayments .bill-row:has-text('Rent') button:has-text('Pay')",
+            timeout=10_000,
+        )
+        page2.wait_for_selector(
+            "#screenPayments .bill-row:has-text('Rent') >> text=Due 1 Nov",
+            timeout=10_000,
+        )
+        wait_settled(page2)
+        snap(page2, out_dir, "16_second_browser_rent_due", full_page=True)
+        results[step_key] = "pass"
+        print(f"  OK  {step_key} -> isolation/16_second_browser_rent_due.png")
+    except Exception as exc:
+        try:
+            if ctx2 is not None:
+                pages = ctx2.pages
+                if pages:
+                    snap(pages[0], out_dir, "16_second_browser_rent_due", full_page=True)
+        except Exception:
+            pass
+        results[step_key] = f"fail: {exc}"
+        print(f"  FAIL {step_key}: {exc}")
+    finally:
+        if ctx1 is not None:
+            ctx1.close()
+        if ctx2 is not None:
+            ctx2.close()
+
+
 def run_desktop_step(page: Page, results: dict[str, str]) -> None:
     out_dir = OUT_DIR / "1280"
 
@@ -387,10 +467,6 @@ def main() -> int:
                 is_mobile=True,
                 has_touch=True,
             )
-            reset_resp = context.request.post(f"{BASE_URL}/api/reset", timeout=15_000)
-            if not reset_resp.ok:
-                print(f"Warning: reset demo returned {reset_resp.status}", file=sys.stderr)
-            context.clear_cookies()
 
             page = context.new_page()
             page.set_default_navigation_timeout(20_000)
@@ -408,15 +484,14 @@ def main() -> int:
             is_mobile=False,
             has_touch=False,
         )
-        reset_resp = desktop_ctx.request.post(f"{BASE_URL}/api/reset", timeout=15_000)
-        if not reset_resp.ok:
-            print(f"Warning: reset demo returned {reset_resp.status}", file=sys.stderr)
-        desktop_ctx.clear_cookies()
         desktop_page = desktop_ctx.new_page()
         desktop_page.set_default_navigation_timeout(20_000)
         desktop_page.set_default_timeout(15_000)
         run_desktop_step(desktop_page, results)
         desktop_ctx.close()
+
+        print("\n--- Isolation: two browser contexts ---", flush=True)
+        run_isolation_step(browser, results)
 
         browser.close()
 

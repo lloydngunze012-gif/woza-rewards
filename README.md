@@ -85,17 +85,17 @@ python -m playwright install chromium
 python tools/screenshots.py
 ```
 
-Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, and rebuilds `screenshots.zip`.
+Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, an isolation check that two browsers keep separate rent, and rebuilds `screenshots.zip`.
 
 ## API (JSON)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Liveness check (Render / monitoring) |
-| POST | `/api/login` | `{ "phone": "..." }` — session cookie |
+| POST | `/api/login` | `{ "name": "..." }` — private demo copy + session cookie |
 | GET | `/api/me` | Full app state |
 | POST | `/api/pay` | `{ "bill_id": 1 }` |
 | POST | `/api/pay_all` | Pay all bills for current period |
 | POST | `/api/grace` | `{ "bill_id": 1 }` |
 | POST | `/api/redeem` | `{ "option": "cash", "points": 10000 }` |
-| POST | `/api/reset` | Drop DB and reseed |
+| POST | `/api/reset` | Reseed this session only (keeps the name) |

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -27,32 +27,64 @@ def _periods_back(end_period: str, count: int) -> list[str]:
     return list(reversed(out))
 
 
+SESSION_TTL_DAYS = 7
+DEFAULT_MEMBER_NAME = "Thandi Mokoena"
+
+
 def drop_and_reseed() -> None:
     from app.models import Base
 
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    db = Session(bind=engine)
-    try:
-        _seed(db)
+
+
+def delete_user_data(db: Session, user: User) -> None:
+    bills = db.query(Bill).filter(Bill.user_id == user.id).all()
+    bill_ids = [b.id for b in bills]
+    if bill_ids:
+        db.query(Payment).filter(Payment.bill_id.in_(bill_ids)).delete(synchronize_session=False)
+        db.query(GraceUse).filter(GraceUse.bill_id.in_(bill_ids)).delete(synchronize_session=False)
+        db.query(Bill).filter(Bill.id.in_(bill_ids)).delete(synchronize_session=False)
+    db.query(Redemption).filter(Redemption.user_id == user.id).delete(synchronize_session=False)
+    db.delete(user)
+    db.flush()
+
+
+def purge_stale_sessions(db: Session, *, days: int = SESSION_TTL_DAYS) -> int:
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    stale = []
+    for user in db.query(User).all():
+        if not user.session_key:
+            stale.append(user)
+            continue
+        created = user.created_at
+        if created is None or created < cutoff:
+            stale.append(user)
+    for user in stale:
+        delete_user_data(db, user)
+    if stale:
         db.commit()
-    finally:
-        db.close()
+    return len(stale)
 
 
-def seed_if_empty(db: Session) -> None:
-    user = db.query(User).first()
-    if user is None:
-        _seed(db)
-        db.commit()
-        return
-    if user.demo_version != DEMO_VERSION:
-        drop_and_reseed()
+def seed_demo_user(db: Session, *, name: str, session_key: str) -> User:
+    user = _seed(db, name=name or DEFAULT_MEMBER_NAME, session_key=session_key)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
-def _seed(db: Session) -> None:
+def replace_session_user(
+    db: Session, *, session_key: str, name: str, existing: User | None = None
+) -> User:
+    if existing is not None:
+        delete_user_data(db, existing)
+    return seed_demo_user(db, name=name, session_key=session_key)
+
+
+def _seed(db: Session, name: str = DEFAULT_MEMBER_NAME, session_key: str | None = None) -> User:
     user = User(
-        name="Thandi Mokoena",
+        name=name,
         phone="072 418 3390",
         status="Gold",
         months_on_time=36,
@@ -65,6 +97,8 @@ def _seed(db: Session) -> None:
         grace_months_earned=3,
         demo_version=DEMO_VERSION,
         bank_consent_active=True,
+        session_key=session_key,
+        created_at=datetime.utcnow(),
     )
     db.add(user)
     db.flush()
@@ -154,6 +188,7 @@ def _seed(db: Session) -> None:
             used_at=datetime(2024, 8, 5, 9, 0, 0),
         )
     )
+    return user
 
 
 def status_for_months(months: int) -> str:

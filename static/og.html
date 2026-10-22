@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1200, height=630" />
+  <title>Woza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="woza-card.css" />
+  <style>
+    html, body {
+      margin: 0;
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #F6F4FB;
+    }
+    .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .og {
+      width: 1200px;
+      height: 630px;
+      box-sizing: border-box;
+      padding: 72px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 48px;
+      background:
+        radial-gradient(ellipse at 88% 20%, rgba(91, 43, 217, 0.12), transparent 55%),
+        radial-gradient(ellipse at 12% 88%, rgba(201, 162, 74, 0.16), transparent 50%),
+        #F6F4FB;
+    }
+    .brand { max-width: 420px; }
+    .mark {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #5B2BD9;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Sora", sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      margin-bottom: 22px;
+    }
+    .wordmark {
+      font-family: "Sora", sans-serif;
+      font-weight: 700;
+      font-size: 76px;
+      color: #1C1530;
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+    }
+    .slogan {
+      font-family: "DM Sans", sans-serif;
+      font-size: 22px;
+      color: #6B6485;
+      margin-top: 18px;
+      line-height: 1.35;
+    }
+    .card-wrap {
+      width: 560px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 22px 40px rgba(60, 40, 10, 0.22));
+    }
+    .card-wrap .membership-card { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="og">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">W</div>
+      <div class="wordmark">Woza</div>
+      <p class="slogan">Pay today. Earn tomorrow.</p>
+    </div>
+    <div class="card-wrap" id="card"></div>
+  </div>
+  <script src="woza-card.js"></script>
+  <script>
+    function fmtPts(n) { return (n + "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+    WozaCard.configure({ fmtPts: fmtPts, slogan: "Pay today. Earn tomorrow." });
+    document.getElementById("card").innerHTML = WozaCard.membershipCardHtml({
+      status: "Gold",
+      name: "Thandi Mokoena",
+      member_since: "Oct 2023",
+      available_points: 12000,
+    }, false);
+  </script>
+</body>
+</html>

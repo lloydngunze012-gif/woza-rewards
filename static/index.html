@@ -5,8 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#5B2BD9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>Woza Rewards</title>
-  <meta name="description" content="Pay today. Earn tomorrow." />
+  <title>Woza</title>
+  <meta name="description" content="Rewards and a credit record for the bills you already pay on time." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://woza-rewards.onrender.com" />
+  <meta property="og:title" content="Woza - Pay today. Earn tomorrow." />
+  <meta property="og:description" content="Rewards and a credit record for the bills you already pay on time." />
+  <meta property="og:image" content="https://woza-rewards.onrender.com/static/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Woza - Pay today. Earn tomorrow." />
+  <meta name="twitter:description" content="Rewards and a credit record for the bills you already pay on time." />
+  <meta name="twitter:image" content="https://woza-rewards.onrender.com/static/og.png" />
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -427,7 +439,13 @@
     }
     .profile-actions a { background: var(--primary-soft); color: var(--primary); }
     .profile-actions .danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
-    .name-hint { margin-top: 10px; }
+    .login-privacy {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.35;
+    }
+    .name-hint { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
     .name-chip {
       padding: 8px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
       border: 1px solid var(--line); background: var(--bg); color: var(--primary);
@@ -553,6 +571,7 @@
     <div class="login-card">
       <label for="displayName">Name</label>
       <input id="displayName" type="text" placeholder="Your name" autocomplete="name" />
+      <p class="login-privacy">Everything you see is a private demo. No real money moves.</p>
       <div class="name-hint" id="nameHint"></div>
       <button type="button" class="btn-primary" id="loginBtn">Continue</button>
       <p class="err" id="loginErr"></p>
@@ -1370,18 +1389,31 @@
       if (!wrap) return;
       wrap.replaceChildren();
       const last = lastDisplayName();
-      if (!last) return;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "name-chip";
-      btn.id = "useLastName";
-      btn.textContent = "Use " + last;
-      btn.onclick = () => {
-        const input = document.getElementById("displayName");
-        input.value = last;
-        input.focus();
-      };
-      wrap.appendChild(btn);
+      if (last) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "name-chip";
+        btn.id = "useLastName";
+        btn.textContent = "Use " + last;
+        btn.onclick = () => {
+          const input = document.getElementById("displayName");
+          input.value = last;
+          input.focus();
+        };
+        wrap.appendChild(btn);
+      }
+      if (!last || last.toLowerCase() !== "thandi") {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "name-chip";
+        chip.id = "continueAsThandi";
+        chip.textContent = "Continue as Thandi";
+        chip.onclick = () => {
+          document.getElementById("displayName").value = "Thandi";
+          document.getElementById("loginBtn").click();
+        };
+        wrap.appendChild(chip);
+      }
     }
 
     async function signOut() {
@@ -1492,6 +1524,7 @@
       document.addEventListener("pointerup", up);
       document.addEventListener("pointercancel", up);
     })();
+    renderLoginHint();
     boot();
   </script>
 </body>

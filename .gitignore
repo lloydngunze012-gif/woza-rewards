@@ -1,4 +1,6 @@
 woza.db
+woza.db-shm
+woza.db-wal
 __pycache__/
 *.pyc
 .venv/

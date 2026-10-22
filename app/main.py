@@ -17,21 +17,20 @@ from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, 
 from app.seed import (
     CURRENT_PERIOD,
     DEMO_NOW,
-    DEMO_VERSION,
     REDEMPTION_ORDER,
     REDEMPTION_RATES,
     REDEMPTION_TITLES,
     REDEEM_UNITS_PER_RAND,
-    drop_and_reseed,
     next_tier_info,
+    purge_stale_sessions,
+    replace_session_user,
     score_label,
-    seed_if_empty,
     status_for_months,
 )
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 SESSION_COOKIE = "woza_session"
-_sessions: dict[str, int] = {}
+SESSION_MAX_AGE = 86400 * 7
 
 app = FastAPI(title="Woza Rewards")
 
@@ -62,10 +61,16 @@ def migrate_schema() -> None:
         statements.append("ALTER TABLE users ADD COLUMN demo_version INTEGER DEFAULT 0")
     if "bank_consent_active" not in cols:
         statements.append("ALTER TABLE users ADD COLUMN bank_consent_active BOOLEAN DEFAULT 1")
-    if statements:
-        with engine.begin() as conn:
-            for stmt in statements:
-                conn.execute(text(stmt))
+    if "session_key" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN session_key VARCHAR")
+    if "created_at" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt))
+        conn.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_session_key ON users (session_key)")
+        )
 
 
 @app.on_event("startup")
@@ -73,7 +78,7 @@ def startup():
     migrate_schema()
     db = SessionLocal()
     try:
-        seed_if_empty(db)
+        purge_stale_sessions(db)
     finally:
         db.close()
 
@@ -259,18 +264,28 @@ def demo_now() -> datetime:
     return DEMO_NOW
 
 
-def get_user_id(request: Request) -> int | None:
-    sid = request.cookies.get(SESSION_COOKIE)
+def session_id_from(request: Request) -> str | None:
+    return request.cookies.get(SESSION_COOKIE)
+
+
+def user_for_session(db: Session, sid: str | None) -> User | None:
     if not sid:
         return None
-    return _sessions.get(sid)
+    return db.query(User).filter(User.session_key == sid).first()
+
+
+def set_session_cookie(response: Response, sid: str) -> None:
+    response.set_cookie(
+        SESSION_COOKIE,
+        sid,
+        httponly=True,
+        samesite="lax",
+        max_age=SESSION_MAX_AGE,
+    )
 
 
 def require_user(request: Request, db: Session) -> User:
-    uid = get_user_id(request)
-    if not uid:
-        raise HTTPException(401, "Not logged in")
-    user = db.query(User).filter(User.id == uid).first()
+    user = user_for_session(db, session_id_from(request))
     if not user:
         raise HTTPException(401, "Not logged in")
     return user
@@ -764,42 +779,20 @@ class RedeemBody(BaseModel):
     points: int
 
 
-def ensure_demo_seed(db: Session) -> None:
-    user = db.query(User).first()
-    if user is None or user.demo_version != DEMO_VERSION:
-        drop_and_reseed()
-        db.expire_all()
-
-
 @app.post("/api/login")
-def login(body: LoginBody, response: Response, db: DbDep):
-    ensure_demo_seed(db)
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(503, "Demo database is not ready. Try again in a moment.")
+def login(body: LoginBody, request: Request, response: Response, db: DbDep):
     name = format_member_name(body.name)
     if not name:
         raise HTTPException(400, "Enter your name")
-    apply_member_name(user, name)
-    db.commit()
-    db.refresh(user)
-    sid = secrets.token_urlsafe(32)
-    _sessions[sid] = user.id
-    response.set_cookie(
-        SESSION_COOKIE,
-        sid,
-        httponly=True,
-        samesite="lax",
-        max_age=86400 * 7,
-    )
+    sid = session_id_from(request) or secrets.token_urlsafe(32)
+    existing = user_for_session(db, sid)
+    user = replace_session_user(db, session_key=sid, name=name, existing=existing)
+    set_session_cookie(response, sid)
     return {"ok": True, "name": user.name}
 
 
 @app.post("/api/logout")
 def logout(request: Request, response: Response):
-    sid = request.cookies.get(SESSION_COOKIE)
-    if sid:
-        _sessions.pop(sid, None)
     response.delete_cookie(SESSION_COOKIE, samesite="lax")
     return {"ok": True}
 
@@ -925,23 +918,11 @@ def revoke_bank_consent(request: Request, db: DbDep):
 
 @app.post("/api/reset")
 def reset_demo(request: Request, response: Response, db: DbDep, body: ResetBody = ResetBody()):
-    get_user_id(request)
-    drop_and_reseed()
-    db.expire_all()
-    user = db.query(User).first()
-    if body.name:
-        apply_member_name(user, body.name)
-        db.commit()
-        db.refresh(user)
-    sid = secrets.token_urlsafe(32)
-    _sessions[sid] = user.id
-    response.set_cookie(
-        SESSION_COOKIE,
-        sid,
-        httponly=True,
-        samesite="lax",
-        max_age=86400 * 7,
-    )
+    user = require_user(request, db)
+    sid = user.session_key or session_id_from(request) or secrets.token_urlsafe(32)
+    name = format_member_name(body.name) or user.name
+    user = replace_session_user(db, session_key=sid, name=name, existing=user)
+    set_session_cookie(response, sid)
     return build_me_payload(user, db)
 
 
@@ -951,6 +932,7 @@ def health():
 
 
 NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+LONG_CACHE = {"Cache-Control": "public, max-age=31536000, immutable"}
 
 
 @app.get("/")
@@ -961,6 +943,14 @@ def index():
 @app.get("/card-preview")
 def card_preview_page():
     return FileResponse(STATIC / "card-preview.html", headers=NO_CACHE)
+
+
+@app.get("/static/og.png")
+def og_image():
+    path = STATIC / "og.png"
+    if not path.is_file():
+        raise HTTPException(404, "Preview image not found")
+    return FileResponse(path, media_type="image/png", headers=LONG_CACHE)
 
 
 if STATIC.exists():
