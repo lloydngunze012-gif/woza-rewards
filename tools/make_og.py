@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render static/og.html to static/og.png (1200x630) for link previews."""
+"""Render static/og.html to static/og.jpg (1200x630 JPEG) for link previews."""
 
 from __future__ import annotations
 
@@ -9,7 +9,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 OG_HTML = ROOT / "static" / "og.html"
-OUT_PATH = ROOT / "static" / "og.png"
+OUT_PATH = ROOT / "static" / "og.jpg"
+MAX_BYTES = 300 * 1024
 
 
 def main() -> int:
@@ -26,10 +27,14 @@ def main() -> int:
         page.wait_for_selector(".membership-card.tier-gold", timeout=15_000)
         page.evaluate("() => document.fonts.ready")
         page.wait_for_timeout(400)
-        page.screenshot(path=str(OUT_PATH), type="png", full_page=False)
+        page.screenshot(path=str(OUT_PATH), type="jpeg", quality=82, full_page=False)
         browser.close()
 
-    print(f"Wrote {OUT_PATH} ({OUT_PATH.stat().st_size} bytes)")
+    size = OUT_PATH.stat().st_size
+    print(f"Wrote {OUT_PATH}")
+    print(f"size: {size} bytes ({size / 1024:.1f} KB)")
+    if size >= MAX_BYTES:
+        raise SystemExit(f"og.jpg is {size} bytes; must be under {MAX_BYTES} (300 KB)")
     return 0
 
 

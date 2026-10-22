@@ -932,7 +932,7 @@ def health():
 
 
 NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
-LONG_CACHE = {"Cache-Control": "public, max-age=31536000, immutable"}
+OG_CACHE = {"Cache-Control": "public, max-age=604800"}
 
 
 @app.get("/")
@@ -945,12 +945,12 @@ def card_preview_page():
     return FileResponse(STATIC / "card-preview.html", headers=NO_CACHE)
 
 
-@app.get("/static/og.png")
+@app.get("/static/og.jpg")
 def og_image():
-    path = STATIC / "og.png"
+    path = STATIC / "og.jpg"
     if not path.is_file():
         raise HTTPException(404, "Preview image not found")
-    return FileResponse(path, media_type="image/png", headers=LONG_CACHE)
+    return FileResponse(path, media_type="image/jpeg", headers=OG_CACHE)
 
 
 if STATIC.exists():
