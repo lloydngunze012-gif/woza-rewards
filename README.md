@@ -24,7 +24,7 @@ Redeploy (if needed):
 
 1. Push this repo to GitHub.
 2. [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint** → connect the repo (uses `render.yaml`), **or** **Web Service** with:
-   - **Build:** `pip install -r requirements.txt`
+   - **Build:** `pip install -r requirements.txt` (nothing else — the OG JPEG is already in `static/og.jpg`)
    - **Start:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (same as `Procfile`)
    - **Health check path:** `/api/health`
    - **Plan:** Starter
@@ -80,9 +80,10 @@ Then on the phone use `http://<Wi-Fi-IPv4-from-ipconfig>:8000` (e.g. `http://192
 With the app running on port 8000:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r tools/dev-requirements.txt
 python -m playwright install chromium
 python tools/screenshots.py
+# optional: python tools/make_og.py   # regenerates static/og.jpg locally; not part of deploy
 ```
 
 Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, an isolation check that two browsers keep separate rent, and rebuilds `screenshots.zip`.

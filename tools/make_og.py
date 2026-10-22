@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Render static/og.html to static/og.jpg (1200x630 JPEG) for link previews."""
+"""Render static/og.html to static/og.jpg (1200x630 JPEG) for link previews.
+
+Local only: run this on a developer machine. The JPEG is committed and served
+as a static file. Render must not install Playwright or generate the image.
+"""
 
 from __future__ import annotations
 
