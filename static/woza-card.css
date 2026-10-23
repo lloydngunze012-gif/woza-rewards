@@ -3,6 +3,7 @@
   perspective: 1200px;
   margin-bottom: 24px;
   position: relative;
+  cursor: pointer;
 }
 .card-flip.compact { margin-bottom: 20px; }
 .card-flip-inner {
@@ -303,9 +304,39 @@
 .mem-back-scan { font-size: 0.68rem; opacity: 0.85; }
 .mem-back-foot { font-size: 0.68rem; opacity: 0.88; font-weight: 600; }
 
+/* Desktop phone-frame uses transform: scale(), which flattens preserve-3d.
+   Swap faces in 2D so tap-to-flip still works on the website layout. */
+@media (min-width: 901px) {
+  .card-flip-inner { transform-style: flat; }
+  .card-face-front,
+  .card-face-back {
+    transition: opacity var(--t-flip, 600ms) var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+  .card-face-back {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .card-flip.is-flipped .card-flip-inner { transform: none; }
+  .card-flip.compact.is-flipped .card-flip-inner { transform: scale(0.96); }
+  .card-flip.is-flipped .card-face-front {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .card-flip.is-flipped .card-face-back {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mem-sheen { transform: none !important; }
   .mem-rosette-hl { transform: rotate(4deg) !important; }
   .card-flip-inner { transition: none !important; }
   .card-flip-hint { animation: none !important; }
+  .card-face-front,
+  .card-face-back { transition: none !important; }
 }

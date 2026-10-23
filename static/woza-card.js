@@ -272,7 +272,7 @@
     return (
       '<div class="card-flip' +
       (compact ? " compact" : "") +
-      '" data-card-flip>' +
+      '" data-card-flip role="button" tabindex="0" aria-label="Tap to flip">' +
       '<div class="card-flip-inner">' +
       '<div class="card-face card-face-front">' +
       membershipCardHtml(u, compact) +
@@ -289,12 +289,20 @@
     document.querySelectorAll("[data-card-flip]").forEach((stage) => {
       if (stage._flipBound) return;
       stage._flipBound = true;
-      stage.addEventListener("click", (e) => {
-        if (e.target.closest("button")) return;
+      const flip = () => {
         stage.classList.toggle("is-flipped");
         const hint = stage.querySelector(".card-flip-hint");
         if (hint) hint.remove();
         try { sessionStorage.setItem("woza.flipHint", "1"); } catch { /* ignore */ }
+      };
+      stage.addEventListener("click", (e) => {
+        if (e.target.closest("button") && !e.target.closest("[data-card-flip]")) return;
+        flip();
+      });
+      stage.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        flip();
       });
     });
     fillQrCodes();

@@ -858,7 +858,6 @@
       syncWozaCardConfig();
       let hint = false;
       try { hint = !sessionStorage.getItem("woza.flipHint"); } catch { hint = true; }
-      if (prefersReduced()) hint = false;
       return WozaCard.membershipCardStageHtml(u, compact, { hint: hint && !compact });
     }
 
