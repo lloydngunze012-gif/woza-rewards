@@ -1,39 +1,30 @@
-/* Woza premium tier membership card.
-   Face swap is 2D (opacity/z-index) so it still works inside the desktop
-   phone-frame, which uses zoom/scale and flattens CSS 3D. */
+/* Woza premium tier membership card */
 .card-flip {
+  perspective: 1200px;
   margin-bottom: 24px;
   position: relative;
   cursor: pointer;
 }
 .card-flip.compact { margin-bottom: 20px; }
-.card-flip-inner { position: relative; }
-.card-face-front {
+.card-flip-inner {
   position: relative;
-  z-index: 1;
-  transition: opacity var(--t-flip, 400ms) var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  transform-style: preserve-3d;
+  transition: transform var(--t-flip, 600ms) var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
 }
+.card-flip.is-flipped .card-flip-inner { transform: rotateY(180deg); }
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-face-front { position: relative; }
 .card-flip .membership-card { margin-bottom: 0; }
 .card-face-back {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  opacity: 0;
-  pointer-events: none;
-  transform: none;
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
-  transition: opacity var(--t-flip, 400ms) var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  position: absolute; inset: 0;
+  transform: rotateY(180deg);
 }
-.card-flip.is-flipped .card-face-front {
-  opacity: 0;
-  pointer-events: none;
-}
-.card-flip.is-flipped .card-face-back {
-  opacity: 1;
-  pointer-events: auto;
-}
-.card-flip.compact .card-flip-inner { transform-origin: top center; transform: scale(0.96); }
+.card-flip.compact .card-flip-inner { transform-origin: top center; }
+.card-flip.compact:not(.is-flipped) .card-flip-inner { transform: scale(0.96); }
+.card-flip.compact.is-flipped .card-flip-inner { transform: rotateY(180deg) scale(0.96); }
 .card-flip-hint {
   position: absolute; right: 12px; bottom: 12px; left: auto; z-index: 8;
   font-size: 0.68rem; font-weight: 600;
@@ -41,7 +32,6 @@
   padding: 4px 8px; border-radius: 8px;
   pointer-events: none;
 }
-.card-flip.is-flipped .card-flip-hint { display: none; }
 .membership-card {
   aspect-ratio: 1.52 / 1;
   border-radius: 18px;
@@ -319,6 +309,4 @@
   .mem-rosette-hl { transform: rotate(4deg) !important; }
   .card-flip-inner { transition: none !important; }
   .card-flip-hint { animation: none !important; }
-  .card-face-front,
-  .card-face-back { transition: none !important; }
 }
