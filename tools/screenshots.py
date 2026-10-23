@@ -133,7 +133,7 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
             page.wait_for_selector("#displayName", timeout=10_000),
             page.wait_for_selector("label[for='displayName']", timeout=10_000),
             page.wait_for_selector("text=Everything you see is a private demo. No real money moves.", timeout=10_000),
-            page.wait_for_selector("#continueAsThandi", timeout=10_000),
+            page.wait_for_selector("#tryThandiBtn", timeout=10_000),
         )[0],
     )
 
@@ -145,11 +145,9 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
         page.wait_for_selector(".mem-points", timeout=15_000)
         page.wait_for_selector("text=12 months to Black", timeout=10_000)
         page.wait_for_selector("#screenHome .home-greeting", timeout=10_000)
-        page.wait_for_selector("#screenHome .home-slogan", timeout=10_000)
-        page.wait_for_selector("#screenHome >> text=Pay today. Earn tomorrow.", timeout=10_000)
         page.wait_for_selector("#screenHome .mem-tier:has-text('Gold')", timeout=10_000)
         page.wait_for_selector("text=You: 36 months", timeout=10_000)
-        page.wait_for_selector("text=Add a bill", timeout=10_000)
+        page.wait_for_selector("#homeNextBill", timeout=10_000)
         page.wait_for_timeout(2_000)
 
     run_step(results, key("02_home"), page, out_dir, "02_home", login_demo, full_page=True)
@@ -293,24 +291,29 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
 
     run_step(results, key("10_rewards_benefits_tab"), page, out_dir, "10_rewards_benefits_tab", benefits_tab)
 
-    def progress_tab() -> None:
-        open_rewards()
-        page.click('#screenRewards button[data-rtab="progress"]')
-        page.wait_for_selector("text=Last 12 months", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel .cal-grid", timeout=10_000)
-        page.wait_for_selector("text=36 months on time", timeout=10_000)
-
-    run_step(results, key("11_rewards_progress_tab"), page, out_dir, "11_rewards_progress_tab", progress_tab)
-
-    def forecast_tab() -> None:
+    def record_tab() -> None:
         close_sheets(page)
-        page.click('nav#tabNav button[data-tab="forecast"]')
-        page.wait_for_selector("#screenForecast:not(.hidden)", timeout=10_000)
-        page.wait_for_selector("#screenForecast >> text=on time (predicted)", timeout=10_000)
-        page.wait_for_selector("#simulateLateBtn", timeout=10_000)
-        page.wait_for_selector("#screenForecast .forecast-disclosure", timeout=10_000)
+        page.click('nav#tabNav button[data-tab="record"]')
+        page.wait_for_selector("#screenRecord:not(.hidden)", timeout=10_000)
+        page.wait_for_selector("text=Last 12 months", timeout=10_000)
+        page.wait_for_selector("#screenRecord .cal-grid", timeout=10_000)
+        page.wait_for_selector("text=36 months on time", timeout=10_000)
+        page.wait_for_selector("#shareRecordBtn", timeout=10_000)
 
-    run_step(results, key("12_forecast"), page, out_dir, "12_forecast", forecast_tab)
+    run_step(results, key("11_record"), page, out_dir, "11_record", record_tab)
+
+    def lender_view() -> None:
+        close_sheets(page)
+        page.click('nav#tabNav button[data-tab="record"]')
+        page.wait_for_selector("#shareRecordBtn", timeout=10_000)
+        page.click("#shareRecordBtn")
+        page.wait_for_selector("#confirmShare", timeout=10_000)
+        page.click("#confirmShare")
+        page.wait_for_selector("#screenRecord >> text=Lender view", timeout=15_000)
+        page.wait_for_selector("#simulateLateBtn", timeout=10_000)
+        page.wait_for_selector("#screenRecord .forecast-disclosure", timeout=10_000)
+
+    run_step(results, key("12_lender_view"), page, out_dir, "12_lender_view", lender_view)
 
     def card_preview() -> None:
         close_sheets(page)
@@ -426,9 +429,8 @@ def run_desktop_step(page: Page, results: dict[str, str]) -> None:
         page.wait_for_selector(".phone-frame", timeout=10_000)
         sign_in(page)
         page.wait_for_selector("#screenHome .home-greeting", timeout=10_000)
-        page.wait_for_selector("#screenHome .home-slogan", timeout=10_000)
         page.wait_for_selector("text=Pay today. Earn tomorrow.", timeout=10_000)
-        page.wait_for_selector("text=Demo: type your name and continue", timeout=10_000)
+        page.wait_for_selector("text=Demo: Try as Thandi, or type your name", timeout=10_000)
         page.wait_for_timeout(2_000)
         page.wait_for_function(
             """() => {

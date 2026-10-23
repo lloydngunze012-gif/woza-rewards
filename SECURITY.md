@@ -30,7 +30,7 @@ Every POST body is a Pydantic model with `extra="forbid"`. Amounts must be `> 0`
 
 ## Partner APIs
 
-`GET /api/lender_view` and `GET /api/forecast` require a valid signed demo session cookie. Unauthenticated calls return **401**. There is no public lender HTML surface in this build.
+`GET /api/lender_view` and `GET /api/forecast` require a valid signed demo session cookie. Unauthenticated calls return **401**. The lender view is an in-app screen opened only after the member confirms share consent.
 
 ## XSS
 

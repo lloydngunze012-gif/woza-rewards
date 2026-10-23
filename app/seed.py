@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
+# Payments, Home due-copy, and Forecast what-if all use November 2026 so
+# "due 1 Nov" and "simulate a missed car payment" mark the same period.
 CURRENT_PERIOD = "2026-11"
-FORECAST_PERIOD = f"{DEMO_NOW.year:04d}-{DEMO_NOW.month:02d}"
+FORECAST_PERIOD = CURRENT_PERIOD
 DEMO_VERSION = 7
 
 AVAILABLE_POINTS = 12_000

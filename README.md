@@ -104,7 +104,7 @@ Predictive on-time and affordability engine for the hackathon weekend. No extern
 
 **Outputs:** `probability_on_time_next_month`, the top 3 drivers in plain English, months to the next status (Gold → Black at 48 on-time months), and a predicted affordability band (Low / Medium / High) plus a responsible instalment ceiling = 30% of verified monthly obligations × overall probability.
 
-**In the app:** the **Forecast** tab (replaces Profile; Reset is the gear on Home). Try **What if I miss my car payment?** — that calls `POST /api/demo/simulate_late` so the ring moves; **Undo** restores it.
+**In the app:** Home shows an on-track line (or a grace nudge if any bill is below 85%). The per-bill forecast and **Demo: simulate a missed car payment** live on the lender view, opened from Record → Share my record. That calls `POST /api/demo/simulate_late`; **Undo** restores it.
 
 Every forecast response includes: *Predicted by Woza Forecast, a rules-based model. Woza does not make credit decisions; a human at the lender does.*
 

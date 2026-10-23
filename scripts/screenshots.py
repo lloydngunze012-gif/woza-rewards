@@ -12,7 +12,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import socket
 import subprocess
@@ -45,11 +44,11 @@ SCREENS = [
     "grace",
     "rewards",
     "rewards_benefits",
-    "rewards_progress",
-    "forecast",
+    "record",
+    "share_consent",
+    "lender_view",
     "what_if",
     "settings",
-    "lender_view",
 ]
 
 
@@ -161,16 +160,15 @@ def show_tab(page: Page, tab: str) -> None:
         "home": "screenHome",
         "payments": "screenPayments",
         "rewards": "screenRewards",
-        "forecast": "screenForecast",
+        "record": "screenRecord",
     }[tab]
     page.wait_for_selector(f"#{screen_id}:not(.hidden)", timeout=10_000)
 
 
 def sign_in(page: Page, base_url: str) -> None:
     page.goto(base_url, wait_until="domcontentloaded")
-    page.wait_for_selector("#displayName", timeout=15_000)
-    page.locator("#displayName").fill(DEMO_NAME)
-    page.locator("#loginBtn").click(force=True)
+    page.wait_for_selector("#tryThandiBtn", timeout=15_000)
+    page.locator("#tryThandiBtn").click(force=True)
     page.wait_for_selector("#appView:not(.hidden)", timeout=20_000)
     page.wait_for_selector("#screenHome .mem-points", timeout=15_000)
 
@@ -223,6 +221,7 @@ def snap(page: Page, dest: Path) -> None:
 def capture_login(page: Page, base_url: str) -> None:
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector("#loginView", timeout=15_000)
+    page.wait_for_selector("#tryThandiBtn", timeout=10_000)
     page.wait_for_selector("#displayName", timeout=10_000)
     page.wait_for_selector("#loginBtn", timeout=10_000)
 
@@ -230,7 +229,8 @@ def capture_login(page: Page, base_url: str) -> None:
 def capture_home(page: Page) -> None:
     show_tab(page, "home")
     page.wait_for_selector("#screenHome .mem-tier", timeout=10_000)
-    page.wait_for_selector("text=Add a bill", timeout=10_000)
+    page.wait_for_selector("#homeNextBill", timeout=10_000)
+    page.wait_for_selector("#screenHome .home-status, #homeGraceBtn", timeout=15_000)
 
 
 def capture_home_card_back(page: Page) -> None:
@@ -254,16 +254,16 @@ def capture_pay_rent(page: Page) -> None:
 
 
 def capture_grace(page: Page) -> None:
-    """Grace months UI. Opens a grace sheet when one exists; otherwise progress."""
-    show_tab(page, "payments")
-    grace_btn = page.locator("button").filter(has_text="grace")
-    if grace_btn.count():
-        grace_btn.first.click()
+    show_tab(page, "home")
+    grace_btn = page.locator("#homeGraceBtn")
+    if grace_btn.count() and grace_btn.is_visible():
+        grace_btn.click()
         page.wait_for_selector("#sheet.open", timeout=8_000)
+        page.wait_for_selector("#confirmGrace", timeout=8_000)
         return
-    show_tab(page, "rewards")
-    page.click('#screenRewards button[data-rtab="progress"]')
+    show_tab(page, "record")
     page.wait_for_selector("text=Grace months", timeout=10_000)
+    page.wait_for_selector("#screenRecord .progress-item", timeout=10_000)
 
 
 def capture_rewards(page: Page) -> None:
@@ -278,23 +278,47 @@ def capture_rewards_benefits(page: Page) -> None:
     page.wait_for_selector("#rewardsPanel >> text=Your Gold tier", timeout=10_000)
 
 
-def capture_rewards_progress(page: Page) -> None:
-    show_tab(page, "rewards")
-    page.click('#screenRewards button[data-rtab="progress"]')
-    page.wait_for_selector("#rewardsPanel .progress-item", timeout=10_000)
+def capture_record(page: Page) -> None:
+    show_tab(page, "record")
+    page.wait_for_selector("#screenRecord:not(.hidden)", timeout=10_000)
+    page.wait_for_selector("#screenRecord .progress-item", timeout=10_000)
+    page.wait_for_selector("#shareRecordBtn", timeout=10_000)
+    page.wait_for_selector("#screenRecord >> text=shared with the credit bureau", timeout=10_000)
 
 
-def capture_forecast(page: Page) -> None:
-    show_tab(page, "forecast")
-    page.wait_for_selector("#screenForecast .forecast-ring", timeout=15_000)
-    page.wait_for_selector("#simulateLateBtn, #undoLateBtn", timeout=10_000)
+def capture_share_consent(page: Page) -> None:
+    show_tab(page, "record")
+    page.wait_for_selector("#shareRecordBtn", timeout=10_000)
+    page.click("#shareRecordBtn")
+    page.wait_for_selector("#sheet.open", timeout=10_000)
+    page.wait_for_selector("#confirmShare", timeout=10_000)
+
+
+def open_lender_view(page: Page) -> None:
+    show_tab(page, "record")
+    if page.locator("#screenRecord >> text=Lender view").count():
+        page.wait_for_selector("#simulateLateBtn, #undoLateBtn", timeout=10_000)
+        return
+    page.wait_for_selector("#shareRecordBtn", timeout=10_000)
+    page.click("#shareRecordBtn")
+    page.wait_for_selector("#confirmShare", timeout=10_000)
+    page.click("#confirmShare")
+    page.wait_for_selector("#screenRecord >> text=Lender view", timeout=15_000)
+    page.wait_for_selector("#simulateLateBtn, #undoLateBtn", timeout=15_000)
+
+
+def capture_lender_view(page: Page) -> None:
+    open_lender_view(page)
+    page.wait_for_selector("#screenRecord >> text=Before Woza", timeout=10_000)
+    page.wait_for_selector("#screenRecord .forecast-bill", timeout=10_000)
+    page.wait_for_selector("#screenRecord .forecast-disclosure", timeout=10_000)
 
 
 def capture_what_if(page: Page) -> None:
-    show_tab(page, "forecast")
+    open_lender_view(page)
     undo = page.locator("#undoLateBtn")
     if undo.count() and undo.is_visible():
-        page.wait_for_selector("#screenForecast .forecast-ring", timeout=10_000)
+        page.wait_for_selector("#screenRecord .forecast-bill", timeout=10_000)
         return
     page.wait_for_selector("#simulateLateBtn", timeout=10_000)
     with page.expect_response(lambda r: "/api/demo/simulate_late" in r.url and r.request.method == "POST"):
@@ -310,53 +334,6 @@ def capture_settings(page: Page) -> None:
     page.wait_for_selector("#resetBtn", timeout=10_000)
 
 
-def lender_html(data: dict) -> str:
-    after = data.get("after") or {}
-    before = data.get("before") or {}
-    afford = data.get("predicted_affordability") or {}
-    before_pts = "".join(f"<li>{html.escape(str(p))}</li>" for p in before.get("points") or [])
-    return f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Lender view</title>
-<style>
-  body {{ font-family: "DM Sans", "Segoe UI", sans-serif; background:#F6F4FB; color:#1C1530;
-         margin:0; padding:24px 18px 40px; }}
-  h1 {{ font-family: Sora, sans-serif; font-size:1.25rem; margin:0 0 6px; }}
-  .sub {{ color:#6B6485; font-size:0.88rem; margin-bottom:18px; }}
-  .panel {{ background:#fff; border:1px solid #E9E4F5; border-radius:16px; padding:16px; margin-bottom:14px; }}
-  h2 {{ font-family: Sora, sans-serif; font-size:1rem; margin:0 0 10px; }}
-  ul {{ margin:0; padding-left:18px; color:#6B6485; }}
-  .stat {{ font-weight:700; font-size:1.05rem; margin:8px 0 0; }}
-  .muted {{ color:#6B6485; font-size:0.82rem; line-height:1.4; }}
-</style></head>
-<body>
-  <h1>Lender view</h1>
-  <p class="sub">Partner snapshot for {html.escape(DEMO_NAME)}</p>
-  <div class="panel">
-    <h2>{html.escape(str(before.get("headline") or "Before Woza"))}</h2>
-    <ul>{before_pts}</ul>
-  </div>
-  <div class="panel">
-    <h2>{html.escape(str(after.get("headline") or "With Woza"))}</h2>
-    <p class="stat">{html.escape(str(after.get("summary") or ""))}</p>
-    <p class="muted" style="margin-top:8px">{html.escape(str(after.get("tier_goal_line") or ""))}</p>
-  </div>
-  <div class="panel">
-    <h2>Predicted affordability</h2>
-    <p class="stat">{html.escape(str(afford.get("band") or ""))} · {html.escape(str(afford.get("instalment_ceiling_display") or ""))}</p>
-    <p class="muted" style="margin-top:8px">{html.escape(str(afford.get("disclosure") or ""))}</p>
-  </div>
-</body></html>"""
-
-
-def capture_lender_view(page: Page, base_url: str) -> None:
-    resp = page.request.get(f"{base_url.rstrip('/')}/api/lender_view")
-    if not resp.ok:
-        raise RuntimeError(f"lender_view returned {resp.status}")
-    page.set_content(lender_html(resp.json()), wait_until="domcontentloaded")
-
-
 CAPTURE_FNS = {
     "login": lambda page, base_url: capture_login(page, base_url),
     "home": lambda page, base_url: capture_home(page),
@@ -366,11 +343,11 @@ CAPTURE_FNS = {
     "grace": lambda page, base_url: capture_grace(page),
     "rewards": lambda page, base_url: capture_rewards(page),
     "rewards_benefits": lambda page, base_url: capture_rewards_benefits(page),
-    "rewards_progress": lambda page, base_url: capture_rewards_progress(page),
-    "forecast": lambda page, base_url: capture_forecast(page),
+    "record": lambda page, base_url: capture_record(page),
+    "share_consent": lambda page, base_url: capture_share_consent(page),
+    "lender_view": lambda page, base_url: capture_lender_view(page),
     "what_if": lambda page, base_url: capture_what_if(page),
     "settings": lambda page, base_url: capture_settings(page),
-    "lender_view": lambda page, base_url: capture_lender_view(page, base_url),
 }
 
 
@@ -513,19 +490,13 @@ def main() -> int:
                             "document.querySelector('#screenHome [data-card-flip]')?.click()"
                         )
                         page.wait_for_timeout(400)
-                    if name in ("pay_rent", "settings"):
+                    if name in ("pay_rent", "settings", "share_consent"):
                         close_sheets(page)
                     if name == "what_if":
                         undo = page.locator("#undoLateBtn")
                         if undo.count() and undo.is_visible():
                             undo.click()
                             page.wait_for_timeout(400)
-                    if name == "lender_view":
-                        page.goto(base_url, wait_until="domcontentloaded")
-                        try:
-                            page.wait_for_selector("#appView:not(.hidden)", timeout=8_000)
-                        except PlaywrightTimeout:
-                            sign_in(page, base_url)
                 except Exception as exc:
                     failed.append(f"{name}: {exc}")
                     try:

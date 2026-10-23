@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=19" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=20" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -124,6 +124,14 @@
       display: flex; align-items: center; justify-content: center;
     }
     .home-gear svg { width: 20px; height: 20px; stroke: var(--ink); fill: none; stroke-width: 2; }
+    .home-status {
+      color: var(--verified); font-weight: 600; font-size: 0.88rem;
+      text-align: center; margin-top: 12px; line-height: 1.35;
+    }
+    .login-or {
+      text-align: center; color: var(--muted); font-size: 0.82rem;
+      margin: 16px 0 8px;
+    }
     .forecast-hero { text-align: center; padding: 20px 16px 16px; }
     .forecast-ring {
       width: 148px; height: 148px; border-radius: 50%;
@@ -143,7 +151,7 @@
     .forecast-status { text-align: center; font-size: 0.92rem; font-weight: 600; margin: -8px 0 16px; }
     .forecast-bill .row-title { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
     .forecast-pct { font-family: "Sora", sans-serif; font-weight: 700; color: var(--primary); white-space: nowrap; }
-    .forecast-disclosure { font-size: 0.72rem; color: var(--muted); line-height: 1.4; margin-top: 8px; text-align: center; }
+    .forecast-disclosure { font-size: 0.72rem; color: var(--muted); line-height: 1.4; margin-top: 8px; margin-bottom: 20px; text-align: center; }
 
     .debit-label { font-size: 0.72rem; color: var(--muted); margin-top: 3px; font-weight: 500; line-height: 1.35; word-break: break-word; }
 
@@ -247,6 +255,7 @@
     .row-now { color: var(--verified); font-weight: 600; }
     .row-points { font-size: 0.78rem; color: var(--primary); font-weight: 600; margin-top: 4px; line-height: 1.35; word-break: break-word; }
     .bureau-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
+    .bureau-row.section { margin-top: 0; margin-bottom: 16px; }
     .bureau-row svg { width: 18px; height: 18px; stroke: var(--primary); flex-shrink: 0; margin-top: 1px; }
     .page-title, .page-sub { padding-left: 0; margin-left: 0; }
     .chevron { width: 20px; height: 20px; stroke: var(--muted); flex-shrink: 0; }
@@ -584,7 +593,7 @@
       </div>
       <p class="desk-slogan">Pay today. Earn tomorrow.</p>
       <p class="desk-line">Rewards and a credit record for the bills you already pay on time.</p>
-      <p class="desk-hint">Demo: type your name and continue</p>
+      <p class="desk-hint">Demo: Try as Thandi, or type your name</p>
     </aside>
     <div class="phone-frame">
       <div class="phone-screen">
@@ -595,11 +604,13 @@
     </div>
     <p class="muted login-slogan" style="margin-bottom:24px">Pay today. Earn tomorrow.</p>
     <div class="login-card">
+      <button type="button" class="btn-primary" id="tryThandiBtn" style="margin-top:0">Try as Thandi</button>
+      <p class="login-or">or continue with your name</p>
       <label for="displayName">Name</label>
       <input id="displayName" type="text" placeholder="Your name" autocomplete="name" />
       <p class="login-privacy">Everything you see is a private demo. No real money moves.</p>
       <div class="name-hint" id="nameHint"></div>
-      <button type="button" class="btn-primary" id="loginBtn">Continue</button>
+      <button type="button" class="btn-secondary" id="loginBtn">Continue</button>
       <p class="err" id="loginErr"></p>
       <p class="muted" id="bootStatus" style="margin-top:12px;font-size:0.82rem;display:none">Connecting…</p>
     </div>
@@ -609,12 +620,12 @@
     <div id="screenHome" class="screen"></div>
     <div id="screenRewards" class="screen hidden"></div>
     <div id="screenPayments" class="screen hidden"></div>
-    <div id="screenForecast" class="screen hidden"></div>
+    <div id="screenRecord" class="screen hidden"></div>
     <nav class="nav" id="tabNav">
       <button type="button" data-tab="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>Home</button>
       <button type="button" data-tab="rewards"><svg viewBox="0 0 24 24"><path d="M12 7l1.2 3.6H17l-3 2.2 1.2 3.6L12 14.2 8.8 16.4 10 11.8 7 9.6h3.8L12 7z"/><rect x="3" y="9" width="18" height="12" rx="2"/></svg>Rewards</button>
       <button type="button" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
-      <button type="button" data-tab="forecast"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 5-7"/></svg>Forecast</button>
+      <button type="button" data-tab="record"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>Record</button>
     </nav>
   </div>
 
@@ -625,7 +636,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=19"></script>
+  <script src="/static/woza-card.js?v=20"></script>
 
   <script>
     const IC = {
@@ -740,12 +751,15 @@
     let state = null;
     let busy = false;
     let rewardsTab = "redeem";
+    let recordMode = "record";
     let displayPoints = 0;
     let displayPointsInitialized = false;
     let scrollBillId = null;
     let progressOpen = 0;
     let homeIntroPlayed = false;
     let homeIntroTimers = [];
+    let forecastState = null;
+    let lenderState = null;
     const SCORE_MAX = 850;
     const SCORE_C = 169.65;
 
@@ -914,22 +928,17 @@
       void home.offsetWidth;
       home.classList.add("home-intro");
       const pts = userPoints(u);
-      const score = u.score ?? 742;
       displayPoints = 0;
       const ptsEl = home.querySelector(".card-face-front .mem-points");
       if (ptsEl) ptsEl.textContent = fmtPts(0);
-      const scoreEl = home.querySelector("[data-score-num]");
-      if (scoreEl) scoreEl.textContent = "0";
       if (prefersReduced()) {
         if (ptsEl) ptsEl.textContent = fmtPts(pts);
-        if (scoreEl) scoreEl.textContent = String(score);
         displayPoints = pts;
         markHomeIntroDone();
         home.classList.remove("home-intro");
         return;
       }
       countEase(ptsEl, 0, pts, 900, 250);
-      countEase(scoreEl, 0, score, 1000, 650);
       homeIntroTimers.push(setTimeout(() => { displayPoints = pts; }, 1200));
       homeIntroTimers.push(setTimeout(() => {
         markHomeIntroDone();
@@ -967,12 +976,84 @@
       return escapeHtml(line);
     }
 
+    function billMoney(b) {
+      return (b && (b.row_now_display || b.amount_display)) || "";
+    }
+
+    function dueShort(b) {
+      const s = String((b && (b.row_status_pay || b.row_status_home)) || "due 1 Nov").trim();
+      return s.replace(/^Due /i, "due ");
+    }
+
+    function billDueLine(b) {
+      return `${b.name} · ${billMoney(b)} · ${dueShort(b)}`;
+    }
+
+    function paymentBills() {
+      return (state && state.payments && state.payments.bills) || [];
+    }
+
+    function paymentBillById(id) {
+      return paymentBills().find((b) => Number(b.id) === Number(id));
+    }
+
+    function nextActionBill() {
+      const bills = paymentBills();
+      const open = (b) => !b.paid && !b.grace_used;
+      return bills.find((b) => open(b) && b.payable_through_woza) || bills.find(open) || bills[0];
+    }
+
+    function tightForecastBill() {
+      const bills = (forecastState && forecastState.bills) || [];
+      return bills.find((b) => Number(b.probability_on_time_next_month) < 85) || null;
+    }
+
+    function lenderShareName() {
+      const bank = state && state.user && state.user.linked_bank;
+      const label = bank && bank.label ? String(bank.label) : "";
+      const first = label.split(/[•·]/)[0].trim();
+      if (/^FNB/i.test(first)) return "FNB";
+      return first || "a lender";
+    }
+
+    const TAB_SCREENS = { home: "Home", rewards: "Rewards", payments: "Payments", record: "Record" };
+
     function renderHome() {
       const u = state.user;
       const h = state.home || {};
       const ladder = tierLadderData(h, u);
-      const bureau = h.bureau_line || "36 on-time months shared with the credit bureau";
-      const bills = (state.payments && state.payments.bills) || [];
+      const next = nextActionBill();
+      const tight = tightForecastBill();
+      const overall = (forecastState && forecastState.overall) || {};
+      const nextStatus = overall.next_status || "Black";
+      const monthsTo = Number(overall.months_to_next_status ?? 12);
+      const canPay = next && next.payable_through_woza && !next.paid && !next.grace_used;
+      let trackExtra = "";
+      if (forecastState && !tight) {
+        trackExtra = `<p class="home-status">On track · ${escapeHtml(nextStatus)} status in ~${monthsTo} months</p>`;
+      }
+      let nudgeHtml = "";
+      if (tight) {
+        const payBill = paymentBillById(tight.bill_id) || next;
+        const line = payBill ? billDueLine(payBill) : `${tight.name}`;
+        nudgeHtml = `
+          <div class="panel section">
+            <p class="row-title">${escapeHtml(line)}. Looks tight — use a grace month?</p>
+            <button type="button" class="btn-primary" id="homeGraceBtn" style="margin-top:12px">Use a grace month</button>
+          </div>`;
+      }
+      const nextHtml = next ? `
+        <div class="group-list section">
+          <div class="group-row bill-row" id="homeNextBill">
+            <span class="icon-wrap">${IC[next.category] || IC.rent}</span>
+            <div class="row-text">
+              <div class="row-title">${escapeHtml(billDueLine(next))}</div>
+            </div>
+            <div class="row-action">${canPay
+              ? `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="homePayBtn">Pay</button>`
+              : (next.paid ? `<span class="badge badge-paid">Paid ✓</span>` : "")}</div>
+          </div>
+        </div>` : "";
       document.getElementById("screenHome").innerHTML = `
         <div class="home-head">
           <h2 class="page-title home-greeting">${localGreeting(u.name)}</h2>
@@ -980,51 +1061,19 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
           </button>
         </div>
-        <p class="page-sub home-slogan">${SLOGAN}</p>
         ${membershipCard(u, false)}
         <div class="section panel tier-ladder-panel">
           ${tierLadderHtml(ladder)}
+          ${trackExtra}
         </div>
-        <div class="section panel score-row">
-          <div class="score-ring" style="--score-offset:${scoreOffset(u.score ?? 742)}">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <circle class="score-track" cx="32" cy="32" r="27"/>
-              <circle class="score-fill" cx="32" cy="32" r="27"/>
-            </svg>
-            <div class="score-ring-text">
-              <strong class="font-num" data-score-num>${Number(u.score ?? 742)}</strong>
-              <em>${escapeHtml(u.score_label || "Strong")}</em>
-            </div>
-          </div>
-          <div>
-            <p class="muted">${escapeHtml(u.score_caption || "Not a credit score")}</p>
-            <div class="bureau-row">${IC.shield}<span>${escapeHtml(bureau)}</span></div>
-          </div>
-        </div>
-        <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Your bills</h3>
-        <div class="group-list section">
-          ${bills.map((b, i) => `
-            <button type="button" class="group-row bill-row" style="--i:${i}" data-goto="${Number(b.id)}">
-              <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
-              <div class="row-text">
-                <div class="row-title">${escapeHtml(b.name)}</div>
-                <div class="row-sub">${billAmountLine(b, "home")}</div>
-                <div class="row-points">${escapeHtml(b.home_points_line)}</div>
-              </div>
-            </button>`).join("")}
-          ${addBillRowHtml(bills.length)}
-        </div>`;
-      document.querySelectorAll("#screenHome [data-goto]").forEach(btn => {
-        btn.onclick = () => {
-          scrollBillId = +btn.dataset.goto;
-          showTab("payments");
-          setTimeout(() => {
-            const el = document.getElementById("bill-" + scrollBillId);
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-          }, 80);
-        };
-      });
-      bindAddBill(document.getElementById("screenHome"));
+        ${nudgeHtml}
+        ${nextHtml}`;
+      const payBtn = document.getElementById("homePayBtn");
+      if (payBtn && next) payBtn.onclick = () => openPaySheet(next);
+      const graceBtn = document.getElementById("homeGraceBtn");
+      if (graceBtn && tight) {
+        graceBtn.onclick = () => openGraceSheet(paymentBillById(tight.bill_id) || next, tight);
+      }
       const gear = document.getElementById("homeGear");
       if (gear) gear.onclick = openHomeSettings;
     }
@@ -1082,6 +1131,7 @@
 
     function renderRewards() {
       const u = state.user;
+      if (rewardsTab !== "benefits") rewardsTab = "redeem";
       document.getElementById("screenRewards").innerHTML = `
         <h2 class="page-title">Rewards</h2>
         ${membershipCard(u, true)}
@@ -1093,7 +1143,6 @@
         <div class="tabs">
           <button type="button" class="tab ${rewardsTab==="redeem"?"active":""}" data-rtab="redeem">Redeem</button>
           <button type="button" class="tab ${rewardsTab==="benefits"?"active":""}" data-rtab="benefits">Benefits</button>
-          <button type="button" class="tab ${rewardsTab==="progress"?"active":""}" data-rtab="progress">Your progress</button>
         </div>
         <div id="rewardsPanel"></div>`;
       document.querySelectorAll("[data-rtab]").forEach(btn => {
@@ -1120,7 +1169,7 @@
         panel.querySelectorAll("[data-opt]").forEach(el => {
           el.onclick = () => openRedeemSheet(el.dataset.opt);
         });
-      } else if (rewardsTab === "benefits") {
+      } else {
         const b = r.benefits;
         const tier = b.tier || "Gold";
         const nextTier = b.next_tier || "Black";
@@ -1133,45 +1182,56 @@
             <h3>Unlock with ${escapeHtml(nextTier)}</h3>
             ${(b.black_unlocks || []).map(t => `<div class="benefit-line">${escapeHtml(t)}</div>`).join("")}
           </div>`;
-      } else {
-        const b = r.benefits;
-        const tl = r.progress_timeline_label || "Last 12 months";
-        panel.innerHTML = `
-          <div class="panel timeline">
-            <p class="muted" style="margin-bottom:8px">Grace months: ${Number(b.grace_months_earned)} earned, ${Number(b.grace_months_used)} used · ${Number(b.grace_months)} available</p>
-            ${(r.progress || []).map((p, i) => `
-              <div class="progress-item${progressOpen === i ? " open" : ""}">
-                <button type="button" class="progress-head" data-progress="${i}">
-                  <span class="icon-wrap">${IC[p.category] || IC.rent}</span>
-                  <span class="row-text">
-                    <div class="row-title">${escapeHtml(p.bill_name)}</div>
-                    <div class="row-sub">${Number(p.months_on_time)} months on time</div>
-                  </span>
-                  ${IC.chevron}
-                </button>
-                ${progressOpen === i ? `
-                <p class="cal-caption">${escapeHtml(tl)}</p>
-                <div class="cal-grid">${(p.months || []).map(m => `
-                  <div class="cal-cell ${CAL_STATUS[m.status] ? m.status : "missed"}"><span class="mo">${escapeHtml(m.label)}</span><span class="mark">${escapeHtml(m.mark)}</span></div>`).join("")}
-                </div>` : ""}
-              </div>`).join("")}
-          </div>`;
-        panel.querySelectorAll("[data-progress]").forEach(btn => {
-          btn.onclick = () => {
-            const i = +btn.dataset.progress;
-            progressOpen = progressOpen === i ? -1 : i;
-            renderRewardsPanel();
-          };
-        });
       }
     }
 
-    const FORECAST_C = 389.56;
-    let forecastState = null;
+    function progressGridHtml() {
+      const r = state.rewards;
+      const b = r.benefits;
+      const tl = r.progress_timeline_label || "Last 12 months";
+      return `
+        <div class="panel timeline">
+          <p class="muted" style="margin-bottom:8px">Grace months: ${Number(b.grace_months_earned)} earned, ${Number(b.grace_months_used)} used · ${Number(b.grace_months)} available</p>
+          ${(r.progress || []).map((p, i) => `
+            <div class="progress-item${progressOpen === i ? " open" : ""}">
+              <button type="button" class="progress-head" data-progress="${i}">
+                <span class="icon-wrap">${IC[p.category] || IC.rent}</span>
+                <span class="row-text">
+                  <div class="row-title">${escapeHtml(p.bill_name)}</div>
+                  <div class="row-sub">${Number(p.months_on_time)} months on time</div>
+                </span>
+                ${IC.chevron}
+              </button>
+              ${progressOpen === i ? `
+              <p class="cal-caption">${escapeHtml(tl)}</p>
+              <div class="cal-grid">${(p.months || []).map(m => `
+                <div class="cal-cell ${CAL_STATUS[m.status] ? m.status : "missed"}"><span class="mo">${escapeHtml(m.label)}</span><span class="mark">${escapeHtml(m.mark)}</span></div>`).join("")}
+              </div>` : ""}
+            </div>`).join("")}
+        </div>`;
+    }
 
-    function forecastOffset(pct) {
-      const p = Math.min(100, Math.max(0, Number(pct) || 0));
-      return (FORECAST_C * (1 - p / 100)).toFixed(2);
+    function bindProgressGrid(root) {
+      if (!root) return;
+      root.querySelectorAll("[data-progress]").forEach(btn => {
+        btn.onclick = () => {
+          const i = +btn.dataset.progress;
+          progressOpen = progressOpen === i ? -1 : i;
+          renderRecord();
+        };
+      });
+    }
+
+    function forecastBillsHtml() {
+      const bills = (forecastState && forecastState.bills) || [];
+      return `<div class="group-list section">${bills.map((b) => `
+        <div class="group-row forecast-bill">
+          <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
+          <div class="row-text">
+            <div class="row-title"><span>${escapeHtml(b.name)}</span><span class="forecast-pct">${Number(b.probability_on_time_next_month)}% predicted</span></div>
+            ${(b.drivers || []).slice(0, 2).map((d) => `<div class="row-sub">${escapeHtml(d)}</div>`).join("")}
+          </div>
+        </div>`).join("")}</div>`;
     }
 
     function openHomeSettings() {
@@ -1194,115 +1254,152 @@
       document.getElementById("signOutBtn").onclick = () => withBusy(signOut, { toast: false });
     }
 
-    function renderForecast(opts = {}) {
-      const fc = forecastState;
-      const root = document.getElementById("screenForecast");
-      if (!root) return;
-      if (!fc) {
-        root.innerHTML = `<h2 class="page-title">Woza Forecast</h2><p class="muted">Loading forecast…</p>`;
+    function renderRecord() {
+      const root = document.getElementById("screenRecord");
+      if (!root || !state) return;
+      if (recordMode === "lender") {
+        renderLenderView();
         return;
       }
-      const overall = fc.overall || {};
-      const pct = Number(overall.probability_on_time_next_month ?? 0);
-      const months = Number(overall.months_to_next_status ?? 0);
-      const nextStatus = overall.next_status || "Black";
-      const bills = fc.bills || [];
-      const simulated = !!fc.simulated_late;
-      const car = bills.find((b) => b.category === "car") || bills[bills.length - 1];
-      const disclosure = fc.disclosure || "";
-      const fromPct = opts.fromPct;
-      const shown = fromPct != null ? Number(fromPct) : pct;
+      const u = state.user;
+      const months = Number(u.months_on_time ?? 36);
       root.innerHTML = `
-        <h2 class="page-title">Woza Forecast</h2>
-        <p class="page-sub">Predicted from your on-time history.</p>
-        <div class="panel forecast-hero section">
-          <div class="forecast-ring" style="--forecast-offset:${forecastOffset(shown)}">
-            <svg viewBox="0 0 148 148" aria-hidden="true">
-              <circle class="score-track" cx="74" cy="74" r="62"/>
-              <circle class="score-fill" cx="74" cy="74" r="62"/>
-            </svg>
-            <div class="forecast-ring-text">
-              <strong class="font-num" data-forecast-pct>${shown}%</strong>
-              <em>predicted</em>
-            </div>
-          </div>
-          <p class="forecast-hero-line">Next month: <span data-forecast-pct-label>${shown}</span>% on time (predicted)</p>
+        <h2 class="page-title">Record</h2>
+        <div class="bureau-row section">${IC.shield}<span>${fmtPts(months)} on-time months · shared with the credit bureau</span></div>
+        ${progressGridHtml()}
+        <button type="button" class="btn-primary section" id="shareRecordBtn">Share my record with a lender</button>`;
+      bindProgressGrid(root);
+      const share = document.getElementById("shareRecordBtn");
+      if (share) share.onclick = openShareSheet;
+    }
+
+    function renderLenderView() {
+      const root = document.getElementById("screenRecord");
+      if (!root) return;
+      const lv = lenderState;
+      const fc = forecastState;
+      if (!lv) {
+        root.innerHTML = `<h2 class="page-title">Lender view</h2><p class="muted">Loading…</p>`;
+        loadLenderView().catch(() => {});
+        return;
+      }
+      const before = lv.before || {};
+      const after = lv.after || {};
+      const afford = lv.predicted_affordability || {};
+      const simulated = !!(fc && fc.simulated_late);
+      const bills = (fc && fc.bills) || [];
+      const car = bills.find((b) => b.category === "car") || bills[bills.length - 1];
+      const disclosure = (fc && fc.disclosure) || afford.disclosure || "";
+      root.innerHTML = `
+        <h2 class="page-title">Lender view</h2>
+        <p class="page-sub">Partner snapshot</p>
+        <div class="panel section">
+          <h3>${escapeHtml(before.headline || "Before Woza")}</h3>
+          ${(before.points || []).map((p) => `<div class="benefit-line">${escapeHtml(p)}</div>`).join("")}
         </div>
-        <p class="forecast-status">${escapeHtml(nextStatus)} status in ~<span data-forecast-months>${months}</span> months (forecast)</p>
-        <div class="group-list section">
-          ${bills.map((b) => `
-            <div class="group-row forecast-bill">
-              <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
-              <div class="row-text">
-                <div class="row-title"><span>${escapeHtml(b.name)}</span><span class="forecast-pct">${Number(b.probability_on_time_next_month)}% predicted</span></div>
-                ${(b.drivers || []).slice(0, 2).map((d) => `<div class="row-sub">${escapeHtml(d)}</div>`).join("")}
-              </div>
-            </div>`).join("")}
+        <div class="panel section">
+          <h3>${escapeHtml(after.headline || "With Woza")}</h3>
+          <p class="row-title">${escapeHtml(after.summary || "")}</p>
+          <p class="muted" style="margin-top:8px">${escapeHtml(after.tier_goal_line || "")}</p>
         </div>
+        <div class="panel section">
+          <h3>Predicted affordability</h3>
+          <p class="row-title">${escapeHtml(afford.band || "")} · ${escapeHtml(afford.instalment_ceiling_display || "")}</p>
+        </div>
+        ${forecastBillsHtml()}
         <div class="section">
           ${simulated
             ? `<button type="button" class="btn-secondary" id="undoLateBtn">Undo</button>`
-            : `<button type="button" class="btn-primary" id="simulateLateBtn">What if I miss my car payment?</button>`}
+            : `<button type="button" class="btn-secondary" id="simulateLateBtn">Demo: simulate a missed car payment</button>`}
         </div>
         <p class="forecast-disclosure">${escapeHtml(disclosure)}</p>`;
       const simBtn = document.getElementById("simulateLateBtn");
       if (simBtn && car) {
         simBtn.onclick = () => withBusy(async () => {
-          const prev = pct;
           forecastState = await api("/api/demo/simulate_late", {
             method: "POST",
             body: JSON.stringify({ bill_id: car.bill_id }),
           });
-          renderForecast({ fromPct: prev });
-          animateForecastRing(prev, Number(forecastState.overall.probability_on_time_next_month));
+          lenderState = await api("/api/lender_view");
+          renderLenderView();
+          renderHome();
+          bindMembershipCards();
         });
       }
       const undoBtn = document.getElementById("undoLateBtn");
       if (undoBtn) {
         undoBtn.onclick = () => withBusy(async () => {
-          const prev = pct;
           forecastState = await api("/api/demo/undo_late", { method: "POST", body: "{}" });
-          renderForecast({ fromPct: prev });
-          animateForecastRing(prev, Number(forecastState.overall.probability_on_time_next_month));
+          lenderState = await api("/api/lender_view");
+          renderLenderView();
+          renderHome();
+          bindMembershipCards();
         });
       }
     }
 
-    function animateForecastRing(from, to) {
-      const ring = document.querySelector("#screenForecast .forecast-ring");
-      const num = document.querySelector("#screenForecast [data-forecast-pct]");
-      const label = document.querySelector("#screenForecast [data-forecast-pct-label]");
-      const monthsEl = document.querySelector("#screenForecast [data-forecast-months]");
-      const nextMonths = Number(forecastState && forecastState.overall && forecastState.overall.months_to_next_status);
-      if (prefersReduced()) {
-        if (ring) ring.style.setProperty("--forecast-offset", forecastOffset(to));
-        if (num) num.textContent = to + "%";
-        if (label) label.textContent = String(to);
-        if (monthsEl && Number.isFinite(nextMonths)) monthsEl.textContent = String(nextMonths);
-        return;
-      }
-      const start = performance.now();
-      const dur = 700;
-      function frame(t) {
-        const p = Math.min(1, (t - start) / dur);
-        const eased = 1 - Math.pow(1 - p, 3);
-        const v = Math.round(from + (to - from) * eased);
-        if (ring) ring.style.setProperty("--forecast-offset", forecastOffset(v));
-        if (num) num.textContent = v + "%";
-        if (label) label.textContent = String(v);
-        if (p < 1) requestAnimationFrame(frame);
-        else {
-          if (num) num.textContent = to + "%";
-          if (label) label.textContent = String(to);
-          if (monthsEl && Number.isFinite(nextMonths)) monthsEl.textContent = String(nextMonths);
-        }
-      }
-      requestAnimationFrame(frame);
+    async function loadLenderView() {
+      lenderState = await api("/api/lender_view");
+      if (recordMode === "lender") renderLenderView();
     }
 
     async function loadForecast() {
       forecastState = await api("/api/forecast");
-      renderForecast();
+      if (state) {
+        renderHome();
+        renderRecord();
+        bindMembershipCards();
+      }
+    }
+
+    function openShareSheet() {
+      const lender = lenderShareName();
+      openSheet(`
+        <h3>Share your on-time record with ${escapeHtml(lender)}?</h3>
+        <p class="muted">They see on-time months, bills and predicted affordability. Nothing else.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmShare">Confirm</button>
+          <button type="button" class="btn-secondary" id="cancelShare">Cancel</button>
+        </div>`);
+      document.getElementById("cancelShare").onclick = closeSheet;
+      document.getElementById("confirmShare").onclick = () => withBusy(async () => {
+        recordMode = "lender";
+        closeSheet();
+        showTab("record");
+        const [lv, fc] = await Promise.all([
+          api("/api/lender_view"),
+          api("/api/forecast"),
+        ]);
+        lenderState = lv;
+        forecastState = fc;
+        renderRecord();
+        renderHome();
+        bindMembershipCards();
+      });
+    }
+
+    function openGraceSheet(bill, forecastBill) {
+      const target = bill || (forecastBill && paymentBillById(forecastBill.bill_id));
+      if (!target) return;
+      const due = dueShort(target).replace(/^due /i, "");
+      openSheet(`
+        <h3>Use a grace month?</h3>
+        <p class="muted">This holds your ${escapeHtml(target.name)} streak for ${escapeHtml(due)}. No points this month.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmGrace">Use grace month</button>
+          <button type="button" class="btn-secondary" id="cancelGrace">Cancel</button>
+        </div>`);
+      document.getElementById("cancelGrace").onclick = closeSheet;
+      document.getElementById("confirmGrace").onclick = () => withBusy(async () => {
+        state = await api("/api/grace", {
+          method: "POST",
+          body: JSON.stringify({ bill_id: target.id }),
+        });
+        closeSheet();
+        forecastState = null;
+        renderAll();
+        toast("Grace month used");
+      });
     }
 
     function openBankSheet() {
@@ -1329,15 +1426,16 @@
       renderHome();
       renderPayments();
       renderRewards();
-      renderForecast();
+      renderRecord();
       bindMembershipCards();
-      playHomeIntro(state.user);
-      loadForecast().catch(() => {});
+      loadForecast()
+        .then(() => playHomeIntro(state.user))
+        .catch(() => playHomeIntro(state.user));
     }
 
     function goHomeImmediate() {
       closeSheet();
-      ["Home", "Rewards", "Payments", "Forecast"].forEach((s) => {
+      Object.values(TAB_SCREENS).forEach((s) => {
         const el = document.getElementById("screen" + s);
         if (!el) return;
         const home = s === "Home";
@@ -1351,16 +1449,16 @@
 
     function showTab(name) {
       closeSheet();
-      const ids = ["home", "rewards", "payments", "forecast"];
-      const next = document.getElementById("screen" + ["Home","Rewards","Payments","Forecast"][ids.indexOf(name)]);
+      if (name !== "record") recordMode = "record";
+      const next = document.getElementById("screen" + (TAB_SCREENS[name] || "Home"));
       const cur = [...document.querySelectorAll("#appView .screen")].find((el) => !el.classList.contains("hidden") && el !== next);
       document.querySelectorAll("#tabNav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
-      if (name === "forecast") loadForecast().catch(() => {});
+      if (name === "record") loadForecast().catch(() => {});
       if (!next || next === cur) {
         if (next) next.classList.remove("hidden");
         return;
       }
-      const others = ["Home","Rewards","Payments","Forecast"].map(s => document.getElementById("screen" + s)).filter(el => el && el !== next && el !== cur);
+      const others = Object.values(TAB_SCREENS).map(s => document.getElementById("screen" + s)).filter(el => el && el !== next && el !== cur);
       others.forEach(el => { el.classList.add("hidden"); el.classList.remove("tab-enter", "tab-leave", "tab-leave-active"); });
       if (!cur || prefersReduced()) {
         if (cur) cur.classList.add("hidden");
@@ -1525,6 +1623,8 @@
         savedName = savedName || (state && state.user && state.user.name) || "";
         state = await api("/api/reset", { method: "POST", body: JSON.stringify({ name: savedName }) });
         forecastState = null;
+        lenderState = null;
+        recordMode = "record";
         rewardsTab = "redeem";
         armHomeIntro();
         try { sessionStorage.removeItem("woza.flipHint"); } catch { /* ignore */ }
@@ -1543,7 +1643,7 @@
       if (!wrap) return;
       wrap.replaceChildren();
       const last = lastDisplayName();
-      if (last) {
+      if (last && last.toLowerCase() !== "thandi") {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "name-chip";
@@ -1556,18 +1656,6 @@
         };
         wrap.appendChild(btn);
       }
-      if (!last || last.toLowerCase() !== "thandi") {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = "name-chip";
-        chip.id = "continueAsThandi";
-        chip.textContent = "Continue as Thandi";
-        chip.onclick = () => {
-          document.getElementById("displayName").value = "Thandi";
-          document.getElementById("loginBtn").click();
-        };
-        wrap.appendChild(chip);
-      }
     }
 
     async function signOut() {
@@ -1575,6 +1663,8 @@
       try { await api("/api/logout", { method: "POST", body: "{}" }); } catch { /* still leave */ }
       state = null;
       forecastState = null;
+      lenderState = null;
+      recordMode = "record";
       displayPointsInitialized = false;
       rewardsTab = "redeem";
       homeIntroPlayed = false;
@@ -1605,17 +1695,17 @@
       const btn = e.target.closest("button[data-tab]");
       if (btn) showTab(btn.dataset.tab);
     });
-    document.getElementById("loginBtn").onclick = async () => {
+    async function submitLogin(name) {
       document.getElementById("loginErr").textContent = "";
       try {
-        await withBusy(
-          () => login(document.getElementById("displayName").value),
-          { toast: false }
-        );
+        await withBusy(() => login(name), { toast: false });
       } catch (e) {
         document.getElementById("loginErr").textContent = apiErrorMessage(e);
       }
-    };
+    }
+    document.getElementById("tryThandiBtn").onclick = () => submitLogin("Thandi");
+    document.getElementById("loginBtn").onclick = () =>
+      submitLogin(document.getElementById("displayName").value);
     document.getElementById("displayName").addEventListener("keydown", (e) => {
       if (e.key === "Enter") document.getElementById("loginBtn").click();
     });

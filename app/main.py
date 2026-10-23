@@ -959,7 +959,27 @@ def pay_all(request: Request, db: DbDep, body: PayAllBody = PayAllBody()):
 @app.post("/api/grace")
 @limiter.limit(API_RATE_LIMIT)
 def use_grace(request: Request, body: GraceBody, db: DbDep):
-    raise HTTPException(400, "Grace months apply automatically when a payment is late")
+    user = require_user(request, db)
+    period = resolve_period(body.period)
+    bill = (
+        db.query(Bill)
+        .filter(Bill.id == body.bill_id, Bill.user_id == user.id)
+        .options(joinedload(Bill.payments), joinedload(Bill.grace_uses))
+        .first()
+    )
+    if not bill:
+        raise HTTPException(404, "Bill not found")
+    if user.grace_months < 1:
+        raise HTTPException(400, "No grace months left")
+    if payment_for_period(bill, period):
+        raise HTTPException(400, "Already paid for this period")
+    if grace_for_period(bill, period):
+        raise HTTPException(400, "Grace month already used")
+    db.add(GraceUse(bill_id=bill.id, period=period, used_at=demo_now()))
+    user.grace_months -= 1
+    db.commit()
+    db.refresh(user)
+    return build_me_payload(user, db)
 
 
 @app.post("/api/redeem")
