@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=17" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -524,14 +524,12 @@
         width: 390px; height: 844px; padding: 12px;
         background: #1C1530; border-radius: 44px;
         box-shadow: 0 28px 64px rgba(28, 21, 48, 0.22), 0 6px 18px rgba(28, 21, 48, 0.1);
-        transform: scale(min(1, (100dvh - 40px) / 868));
-        transform-origin: center center;
+        zoom: min(1, (100dvh - 40px) / 868);
       }
       .phone-screen {
         display: block; position: relative; isolation: isolate;
         width: 390px; height: 844px; overflow: hidden;
         background: var(--bg); border-radius: 32px;
-        transform: translateZ(0);
       }
       .login-wrap {
         min-height: 100%; height: 100%; max-width: none; width: 100%;
@@ -627,7 +625,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js"></script>
+  <script src="/static/woza-card.js?v=17"></script>
 
   <script>
     const IC = {
@@ -856,9 +854,7 @@
 
     function membershipCard(u, compact) {
       syncWozaCardConfig();
-      let hint = false;
-      try { hint = !sessionStorage.getItem("woza.flipHint"); } catch { hint = true; }
-      return WozaCard.membershipCardStageHtml(u, compact, { hint: hint && !compact });
+      return WozaCard.membershipCardStageHtml(u, compact, { hint: !compact });
     }
 
     function bindMembershipCards() {

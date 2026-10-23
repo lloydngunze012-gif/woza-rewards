@@ -291,9 +291,6 @@
       stage._flipBound = true;
       const flip = () => {
         stage.classList.toggle("is-flipped");
-        const hint = stage.querySelector(".card-flip-hint");
-        if (hint) hint.remove();
-        try { sessionStorage.setItem("woza.flipHint", "1"); } catch { /* ignore */ }
       };
       stage.addEventListener("click", (e) => {
         if (e.target.closest("button") && !e.target.closest("[data-card-flip]")) return;
