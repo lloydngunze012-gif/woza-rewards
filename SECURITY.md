@@ -46,11 +46,11 @@ All balances, bills, scores, and history are seeded fiction for the FNB App of t
 
 ## Consent before bank feed
 
-Car-finance verification is modelled as a **bank debit-order read** and is gated on `bank_consent_active`. Profile → Linked bank → **Revoke consent** turns verification off. Woza never initiates a debit from that account in this demo.
+Car-finance verification is modelled as a **bank debit-order read** and is gated on `bank_consent_active`. Home gear → Linked bank → **Revoke consent** turns verification off. Woza never initiates a debit from that account in this demo.
 
 ## AI disclosure (forecast)
 
-`GET /api/forecast` is a rules-based projection (`method: rules_based_demo`). The payload includes `ai_disclosure`: it is **not** a credit decision, **not** personalised financial advice, and **not** a production ML model.
+`GET /api/forecast` is Woza Forecast, a rules-based model (`method: woza_forecast_rules`). Every response includes `disclosure`: *Predicted by Woza Forecast, a rules-based model. Woza does not make credit decisions; a human at the lender does.* It is **not** a credit decision and **not** a production ML model.
 
 ## Third-party inventory
 

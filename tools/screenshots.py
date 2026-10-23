@@ -302,15 +302,15 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
 
     run_step(results, key("11_rewards_progress_tab"), page, out_dir, "11_rewards_progress_tab", progress_tab)
 
-    def profile_tab() -> None:
+    def forecast_tab() -> None:
         close_sheets(page)
-        page.click('nav#tabNav button[data-tab="profile"]')
-        page.wait_for_selector("#screenProfile:not(.hidden)", timeout=10_000)
-        page.locator("#linkedBankBtn").wait_for(state="attached", timeout=10_000)
-        page.wait_for_selector("#signOutBtn", timeout=10_000)
-        page.wait_for_selector("#resetBtn", timeout=10_000)
+        page.click('nav#tabNav button[data-tab="forecast"]')
+        page.wait_for_selector("#screenForecast:not(.hidden)", timeout=10_000)
+        page.wait_for_selector("#screenForecast >> text=on time (predicted)", timeout=10_000)
+        page.wait_for_selector("#simulateLateBtn", timeout=10_000)
+        page.wait_for_selector("#screenForecast .forecast-disclosure", timeout=10_000)
 
-    run_step(results, key("12_profile"), page, out_dir, "12_profile", profile_tab)
+    run_step(results, key("12_forecast"), page, out_dir, "12_forecast", forecast_tab)
 
     def card_preview() -> None:
         close_sheets(page)

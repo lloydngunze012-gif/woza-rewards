@@ -16,7 +16,7 @@ Do **not** use a laptop-only URL (`127.0.0.1`) or **`http://0.0.0.0`** — those
 
 The instance runs on Render **Starter** (always on). No Wi‑Fi or firewall setup required.
 
-After a redeploy, **Profile → Reset demo** restores the seeded Thandi state.
+After a redeploy, the **gear on Home → Reset demo** restores the seeded Thandi state.
 
 **Demo story:** Thandi is **Gold** with **36 on-time months** toward **Black** (48 months). Home shows a three-stop tier ladder (Silver · Gold · Black).
 
@@ -88,6 +88,25 @@ python tools/screenshots.py
 
 Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, an isolation check that two browsers keep separate rent, and rebuilds `screenshots.zip`.
 
+## Weekend feature (23–25 Oct 2026): Woza Forecast
+
+Predictive on-time and affordability engine for the hackathon weekend. No external ML libraries — a deterministic model in `app/forecast.py` that reads the existing `users`, `bills`, `payments`, and `grace_uses` tables and recomputes on every request (after a payment, a simulated late, or a grace month).
+
+**Per bill, then overall (amount-weighted):**
+
+- On-time rate over the last 3 / 6 / 12 months, weighted 0.5 / 0.3 / 0.2
+- Trend: slope of days-before-due over the last 6 months (paying later lowers the probability)
+- Seasonality: −8% when the forecast month is December or January
+- Grace usage: −10% per grace month used in the last 12 months
+- Amount pressure: −5% if the bill is more than 40% of monthly obligations
+- Clamped to 5–99%
+
+**Outputs:** `probability_on_time_next_month`, the top 3 drivers in plain English, months to the next status (Gold → Black at 48 on-time months), and a predicted affordability band (Low / Medium / High) plus a responsible instalment ceiling = 30% of verified monthly obligations × overall probability.
+
+**In the app:** the **Forecast** tab (replaces Profile; Reset is the gear on Home). Try **What if Thandi misses her car payment?** — that calls `POST /api/demo/simulate_late` so the ring moves; **Undo** restores it.
+
+Every forecast response includes: *Predicted by Woza Forecast, a rules-based model. Woza does not make credit decisions; a human at the lender does.*
+
 ## API (JSON)
 
 | Method | Path | Description |
@@ -100,5 +119,7 @@ Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `sc
 | POST | `/api/grace` | `{ "bill_id": 1 }` |
 | POST | `/api/redeem` | `{ "option": "cash", "points": 10000 }` |
 | POST | `/api/reset` | Reseed this session only (keeps the name) |
-| GET | `/api/lender_view` | Partner snapshot (session required) |
-| GET | `/api/forecast` | Rules-based demo forecast (session required) |
+| GET | `/api/lender_view` | Partner snapshot + predicted affordability (session required) |
+| GET | `/api/forecast` | Woza Forecast: per-bill and overall probabilities (session required) |
+| POST | `/api/demo/simulate_late` | `{ "bill_id": 1 }` — mark current month late (demo) |
+| POST | `/api/demo/undo_late` | Remove simulated late payments |

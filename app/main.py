@@ -20,6 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import inspect, text
 
 from app.config import SECRET_KEY
+from app.forecast import DEMO_LATE_TAG, build_forecast, due_plus_days
 from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, engine, init_db
 from app.seed import (
     CURRENT_PERIOD,
@@ -753,6 +754,19 @@ def build_me_payload(user: User, db: Session) -> dict:
     }
 
 
+def bills_for_forecast(user: User, db: Session) -> list[Bill]:
+    return (
+        db.query(Bill)
+        .filter(Bill.user_id == user.id)
+        .options(joinedload(Bill.payments), joinedload(Bill.grace_uses))
+        .all()
+    )
+
+
+def forecast_payload(user: User, db: Session) -> dict:
+    return build_forecast(user, bills_for_forecast(user, db), target_period=CURRENT_PERIOD)
+
+
 def bureau_summary(user: User, db: Session) -> dict:
     bills = db.query(Bill).filter(Bill.user_id == user.id).all()
     monthly = sum(b.amount_cents for b in bills)
@@ -1043,6 +1057,7 @@ def lender_view(request: Request, db: DbDep):
                 f"score {after['score']}, {after['grace_unused']} grace unused"
             ),
         },
+        "predicted_affordability": forecast_payload(user, db)["predicted_affordability"],
     }
 
 
@@ -1050,23 +1065,61 @@ def lender_view(request: Request, db: DbDep):
 @limiter.limit(API_RATE_LIMIT)
 def forecast(request: Request, db: DbDep):
     user = require_user(request, db)
+    return forecast_payload(user, db)
+
+
+class SimulateLateBody(ApiModel):
+    bill_id: int = Field(..., ge=1)
+
+
+@app.post("/api/demo/simulate_late")
+@limiter.limit(API_RATE_LIMIT)
+def simulate_late(request: Request, body: SimulateLateBody, db: DbDep):
+    user = require_user(request, db)
+    bill = (
+        db.query(Bill)
+        .filter(Bill.id == body.bill_id, Bill.user_id == user.id)
+        .options(joinedload(Bill.payments), joinedload(Bill.grace_uses))
+        .first()
+    )
+    if not bill:
+        raise HTTPException(404, "Bill not found")
+    existing = payment_for_period(bill, CURRENT_PERIOD)
+    if existing and existing.verified_by == DEMO_LATE_TAG:
+        return forecast_payload(user, db)
+    if existing:
+        raise HTTPException(400, "This period already has a payment")
+    if grace_for_period(bill, CURRENT_PERIOD):
+        raise HTTPException(400, "Grace month already used")
+    db.add(
+        Payment(
+            bill_id=bill.id,
+            period=CURRENT_PERIOD,
+            paid_at=due_plus_days(CURRENT_PERIOD, bill.due_day, 14),
+            on_time=False,
+            verified_by=DEMO_LATE_TAG,
+            points_awarded=0,
+        )
+    )
+    db.commit()
+    db.expire_all()
+    return forecast_payload(user, db)
+
+
+@app.post("/api/demo/undo_late")
+@limiter.limit(API_RATE_LIMIT)
+def undo_late(request: Request, db: DbDep, body: EmptyBody = EmptyBody()):
+    user = require_user(request, db)
     bills = db.query(Bill).filter(Bill.user_id == user.id).all()
-    monthly_pts = sum(b.points_per_month for b in bills)
-    horizon = 12
-    projected_months = user.months_on_time + horizon
-    return {
-        "ai_disclosure": (
-            "This forecast is a synthetic, rules-based demo projection. "
-            "It is not a credit decision, not personalised financial advice, "
-            "and is not produced by a production machine-learning model."
-        ),
-        "method": "rules_based_demo",
-        "horizon_months": horizon,
-        "current_status": status_for_months(user.months_on_time),
-        "projected_on_time_months": projected_months,
-        "projected_status": status_for_months(projected_months),
-        "projected_points": user.points + monthly_pts * horizon,
-    }
+    bill_ids = [b.id for b in bills]
+    if bill_ids:
+        db.query(Payment).filter(
+            Payment.bill_id.in_(bill_ids),
+            Payment.verified_by == DEMO_LATE_TAG,
+        ).delete(synchronize_session=False)
+        db.commit()
+        db.expire_all()
+    return forecast_payload(user, db)
 
 
 @app.get("/api/health")
