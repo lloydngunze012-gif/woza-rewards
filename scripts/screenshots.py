@@ -229,8 +229,9 @@ def capture_login(page: Page, base_url: str) -> None:
 def capture_home(page: Page) -> None:
     show_tab(page, "home")
     page.wait_for_selector("#screenHome .mem-tier", timeout=10_000)
-    page.wait_for_selector("#homeNextBill", timeout=10_000)
-    page.wait_for_selector("#screenHome .home-status, #homeGraceBtn", timeout=15_000)
+    page.wait_for_selector("#streakWheel", timeout=10_000)
+    page.wait_for_selector("#thisMonth", timeout=10_000)
+    page.wait_for_selector("#homePayWoza, #screenHome .home-status", timeout=15_000)
 
 
 def capture_home_card_back(page: Page) -> None:
@@ -255,7 +256,7 @@ def capture_pay_rent(page: Page) -> None:
 
 def capture_grace(page: Page) -> None:
     show_tab(page, "home")
-    grace_btn = page.locator("#homeGraceBtn")
+    grace_btn = page.locator("#homeNudge")
     if grace_btn.count() and grace_btn.is_visible():
         grace_btn.click()
         page.wait_for_selector("#sheet.open", timeout=8_000)

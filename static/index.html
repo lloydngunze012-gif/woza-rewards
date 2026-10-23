@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=20" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=22" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -128,6 +128,31 @@
       color: var(--verified); font-weight: 600; font-size: 0.88rem;
       text-align: center; margin-top: 12px; line-height: 1.35;
     }
+    .home-status.is-nudge {
+      color: var(--gold); width: 100%; background: none; border: none;
+      padding: 0; font: inherit; font-weight: 600; font-size: 0.88rem;
+    }
+    .streak-dots {
+      display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+      gap: 6px; margin-top: 4px; font-size: 0.78rem; font-weight: 600;
+    }
+    .streak-dot-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .streak-pip {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--primary-soft); background: var(--surface); box-sizing: border-box;
+    }
+    .streak-dot-item.reached .streak-pip {
+      background: var(--primary); border-color: var(--primary);
+    }
+    .streak-sep { color: var(--muted); font-weight: 500; }
+    .month-bills {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+      margin: 12px 0;
+    }
+    .month-bill { text-align: center; min-width: 0; }
+    .month-bill .icon-wrap { margin: 0 auto 6px; }
+    .month-bill .row-title { font-size: 0.82rem; }
+    .month-bill .font-num { font-size: 0.88rem; margin-top: 2px; }
     .login-or {
       text-align: center; color: var(--muted); font-size: 0.82rem;
       margin: 16px 0 8px;
@@ -412,6 +437,9 @@
     .home-intro .score-fill {
       animation: scoreDraw var(--t-score) var(--ease-out) 650ms both;
     }
+    .home-intro .streak-ring .score-fill {
+      animation: streakDraw var(--t-score) var(--ease-out) 650ms both;
+    }
     .home-intro .score-ring em {
       opacity: 0;
       animation: fadeIn var(--t-fast) ease-out calc(650ms + var(--t-score)) both;
@@ -447,6 +475,10 @@
       from { stroke-dashoffset: 169.65; }
       to { stroke-dashoffset: var(--score-offset, 21.54); }
     }
+    @keyframes streakDraw {
+      from { stroke-dashoffset: 389.56; }
+      to { stroke-dashoffset: var(--forecast-offset, 97.39); }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .home-intro .card-flip,
@@ -455,6 +487,7 @@
       .home-intro .tier-stop.reached .tier-dot,
       .home-intro .tier-you,
       .home-intro .score-fill,
+      .home-intro .streak-ring .score-fill,
       .home-intro .score-ring em,
       .home-intro .bill-row,
       .sheet-check-mark,
@@ -465,6 +498,7 @@
       .home-intro .bill-row { opacity: 1 !important; transform: none !important; }
       .home-intro .tier-ladder-fill { transform: scaleX(var(--fill-to, 0.75)) !important; }
       .home-intro .score-fill { stroke-dashoffset: var(--score-offset, 21.54) !important; }
+      .home-intro .streak-ring .score-fill { stroke-dashoffset: var(--forecast-offset, 97.39) !important; }
       .sheet-check-mark { stroke-dashoffset: 0 !important; }
       .is-press, .is-release, .tap-press { transform: none !important; transition: none !important; }
       #appView .screen { transition: none !important; }
@@ -636,7 +670,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=20"></script>
+  <script src="/static/woza-card.js?v=22"></script>
 
   <script>
     const IC = {
@@ -805,54 +839,60 @@
       return u.available_points ?? u.points ?? 0;
     }
 
-    function tierLadderData(h, u) {
-      const mot = u.months_on_time ?? 36;
-      const max = 48;
-      if (h && h.tier_ladder) return h.tier_ladder;
-      const fill = Math.min(100, Math.round((mot / max) * 100));
-      const toBlack = Math.max(0, max - mot);
-      return {
-        months: mot,
-        max_months: max,
-        fill_pct: fill,
-        marker_pct: fill,
-        marker_label: `You: ${mot} months`,
-        caption_line: `${toBlack} months to Black`,
-        stops: [
-          { tier: "Silver", months: 12, pct: 25, reached: mot >= 12 },
-          { tier: "Gold", months: 24, pct: 50, reached: mot >= 24 },
-          { tier: "Black", months: 48, pct: 100, reached: mot >= 48 },
-        ],
-      };
+    const STREAK_MAX = 48;
+    const STREAK_C = 389.56;
+    const STREAK_STOPS = [
+      { name: "Silver", at: 12 },
+      { name: "Gold", at: 24 },
+      { name: "Black", at: 48 },
+    ];
+
+    function streakOffset(months) {
+      const p = Math.min(1, Math.max(0, Number(months) || 0) / STREAK_MAX);
+      return (STREAK_C * (1 - p)).toFixed(2);
     }
 
-    function tierLadderHtml(ladder) {
-      const check = "✓";
-      const stops = ladder.stops.map(s => {
-        const cls = [
-          "tier-stop",
-          String(s.tier || "").toLowerCase().replace(/[^a-z]/g, ""),
-          s.reached ? "reached" : "",
-        ].filter(Boolean).join(" ");
-        const inner = s.reached ? check : "";
-        return `<div class="${cls}" style="left:${Number(s.pct) || 0}%;--pop-at:${(Number(s.pct) / 100).toFixed(2)}"><div class="tier-dot">${inner}</div></div>`;
-      }).join("");
-      const labels = ladder.stops.map(s =>
-        `<span>${escapeHtml(s.tier)}</span>`).join("");
-      const subs = ladder.stops.map(s =>
-        `<span>${escapeHtml(s.months)} mo</span>`).join("");
-      return `
-        <div class="tier-ladder">
-          <div class="tier-ladder-rail">
-            <div class="tier-ladder-track"></div>
-            <div class="tier-ladder-fill" style="--fill-to:${(Number(ladder.fill_pct) / 100).toFixed(3)}"></div>
-            ${stops}
-            <div class="tier-you" style="left:${Number(ladder.marker_pct) || 0}%">${escapeHtml(ladder.marker_label)}</div>
-          </div>
-          <div class="tier-ladder-labels">${labels}</div>
-          <div class="tier-ladder-subs">${subs}</div>
-          <p class="tier-ladder-caption">${escapeHtml(ladder.caption_line)}</p>
-        </div>`;
+    function streakDotsHtml(months) {
+      const next = STREAK_STOPS.find((s) => months < s.at);
+      return STREAK_STOPS.map((s) => {
+        const reached = months >= s.at;
+        const isNext = !!(next && s.name === next.name);
+        const label = reached
+          ? `${s.name} ✓`
+          : isNext
+            ? `${s.name} ${s.at - months} to go`
+            : s.name;
+        return `<span class="streak-dot-item${reached ? " reached" : ""}"><i class="streak-pip" aria-hidden="true"></i>${escapeHtml(label)}</span>`;
+      }).join('<span class="streak-sep">·</span>');
+    }
+
+    function dueShortDate() {
+      const raw = (state && state.meta && state.meta.due_display) || "1 Nov 2026";
+      return String(raw).replace(/\s+\d{4}$/, "").trim() || "1 Nov";
+    }
+
+    function shortBillName(b) {
+      const cat = (b && b.category) || "";
+      if (cat === "utilities" || cat === "electricity") return "Lights";
+      if (cat === "car") return "Car";
+      if (cat === "rent") return "Rent";
+      const n = String((b && b.name) || "");
+      if (/utilit|electric|light/i.test(n)) return "Lights";
+      if (/car/i.test(n)) return "Car";
+      if (/rent/i.test(n)) return "Rent";
+      return n.split(/\s+/)[0] || "Bill";
+    }
+
+    function wozaPayDisplay() {
+      const p = (state && state.payments) || {};
+      const line = String(p.hero_you_pay_line || "");
+      const m = line.match(/R[\d\s]+/);
+      if (m) return m[0].replace(/\s+$/, "");
+      return p.hero_amount || "";
+    }
+
+    function randFromCents(cents) {
+      return `R${fmtPts(Math.floor((Number(cents) || 0) / 100))}`;
     }
 
     function syncWozaCardConfig() {
@@ -933,12 +973,17 @@
       if (ptsEl) ptsEl.textContent = fmtPts(0);
       if (prefersReduced()) {
         if (ptsEl) ptsEl.textContent = fmtPts(pts);
+        const streakEl = home.querySelector("[data-streak-num]");
+        if (streakEl) streakEl.textContent = String(Number((u && u.months_on_time) || 0));
         displayPoints = pts;
         markHomeIntroDone();
         home.classList.remove("home-intro");
         return;
       }
       countEase(ptsEl, 0, pts, 900, 250);
+      const streakEl = home.querySelector("[data-streak-num]");
+      const streakTo = Number((u && u.months_on_time) || 0);
+      if (streakEl) countEase(streakEl, 0, streakTo, 900, 400);
       homeIntroTimers.push(setTimeout(() => { displayPoints = pts; }, 1200));
       homeIntroTimers.push(setTimeout(() => {
         markHomeIntroDone();
@@ -1020,59 +1065,66 @@
 
     function renderHome() {
       const u = state.user;
-      const h = state.home || {};
-      const ladder = tierLadderData(h, u);
-      const next = nextActionBill();
-      const tight = tightForecastBill();
-      const overall = (forecastState && forecastState.overall) || {};
-      const nextStatus = overall.next_status || "Black";
-      const monthsTo = Number(overall.months_to_next_status ?? 12);
-      const canPay = next && next.payable_through_woza && !next.paid && !next.grace_used;
-      let trackExtra = "";
-      if (forecastState && !tight) {
-        trackExtra = `<p class="home-status">On track · ${escapeHtml(nextStatus)} status in ~${monthsTo} months</p>`;
+      const months = Number(u.months_on_time ?? 0);
+      const bills = paymentBills();
+      const tight = months > 0 ? tightForecastBill() : null;
+      const tightPay = tight ? (paymentBillById(tight.bill_id) || nextActionBill()) : null;
+      const due = dueShortDate();
+      const totalCents = bills.reduce((sum, b) => sum + (Number(b.amount_cents) || 0), 0);
+      const payAmt = wozaPayDisplay();
+      const p = state.payments || {};
+      const ringLabel = months <= 0 ? "Start your streak" : "months on time";
+      let lineHtml = "";
+      if (tight && tightPay) {
+        const short = shortBillName(tightPay);
+        const amt = tightPay.amount_display || randFromCents(tightPay.amount_cents);
+        lineHtml = `<button type="button" class="home-status is-nudge" id="homeNudge">${escapeHtml(short)} · ${escapeHtml(amt)} · looks tight — use a grace month?</button>`;
+      } else if (months <= 0) {
+        lineHtml = `<p class="home-status">Pay your first bill through Woza to start.</p>`;
+      } else {
+        lineHtml = `<p class="home-status">Pay on ${escapeHtml(due)} to make it ${months + 1}.</p>`;
       }
-      let nudgeHtml = "";
-      if (tight) {
-        const payBill = paymentBillById(tight.bill_id) || next;
-        const line = payBill ? billDueLine(payBill) : `${tight.name}`;
-        nudgeHtml = `
-          <div class="panel section">
-            <p class="row-title">${escapeHtml(line)}. Looks tight — use a grace month?</p>
-            <button type="button" class="btn-primary" id="homeGraceBtn" style="margin-top:12px">Use a grace month</button>
-          </div>`;
-      }
-      const nextHtml = next ? `
-        <div class="group-list section">
-          <div class="group-row bill-row" id="homeNextBill">
-            <span class="icon-wrap">${IC[next.category] || IC.rent}</span>
-            <div class="row-text">
-              <div class="row-title">${escapeHtml(billDueLine(next))}</div>
-            </div>
-            <div class="row-action">${canPay
-              ? `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="homePayBtn">Pay</button>`
-              : (next.paid ? `<span class="badge badge-paid">Paid ✓</span>` : "")}</div>
-          </div>
-        </div>` : "";
+      const monthBills = bills.map((b) => `
+        <div class="month-bill">
+          <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
+          <div class="row-title">${escapeHtml(shortBillName(b))}</div>
+          <div class="font-num">${escapeHtml(b.amount_display || randFromCents(b.amount_cents))}</div>
+        </div>`).join("");
+      const payBtnHtml = (p.payable_outstanding && payAmt)
+        ? `<button type="button" class="btn-primary" id="homePayWoza">Pay ${escapeHtml(payAmt)} through Woza</button>`
+        : "";
       document.getElementById("screenHome").innerHTML = `
         <div class="home-head">
           <h2 class="page-title home-greeting">${localGreeting(u.name)}</h2>
           <button type="button" class="home-gear" id="homeGear" aria-label="Settings">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
           </button>
         </div>
         ${membershipCard(u, false)}
-        <div class="section panel tier-ladder-panel">
-          ${tierLadderHtml(ladder)}
-          ${trackExtra}
+        <div class="section panel" id="streakWheel">
+          <div class="forecast-ring streak-ring" style="--forecast-offset:${streakOffset(months)}">
+            <svg viewBox="0 0 148 148" aria-hidden="true">
+              <circle class="score-track" cx="74" cy="74" r="62"/>
+              <circle class="score-fill" cx="74" cy="74" r="62"/>
+            </svg>
+            <div class="forecast-ring-text">
+              <strong class="font-num" data-streak-num>${months}</strong>
+              <em>${escapeHtml(ringLabel)}</em>
+            </div>
+          </div>
+          <div class="streak-dots">${streakDotsHtml(months)}</div>
+          ${lineHtml}
         </div>
-        ${nudgeHtml}
-        ${nextHtml}`;
-      const payBtn = document.getElementById("homePayBtn");
-      if (payBtn && next) payBtn.onclick = () => openPaySheet(next);
-      const graceBtn = document.getElementById("homeGraceBtn");
-      if (graceBtn && tight) {
-        graceBtn.onclick = () => openGraceSheet(paymentBillById(tight.bill_id) || next, tight);
+        <div class="section panel" id="thisMonth">
+          <h3>${escapeHtml(due)} · ${bills.length} bills · ${escapeHtml(randFromCents(totalCents))}</h3>
+          <div class="month-bills">${monthBills}</div>
+          ${payBtnHtml}
+        </div>`;
+      const payBtn = document.getElementById("homePayWoza");
+      if (payBtn) payBtn.onclick = () => showTab("payments");
+      const nudge = document.getElementById("homeNudge");
+      if (nudge && tight) {
+        nudge.onclick = () => openGraceSheet(tightPay, tight);
       }
       const gear = document.getElementById("homeGear");
       if (gear) gear.onclick = openHomeSettings;
