@@ -77,16 +77,17 @@ Then on the phone use `http://<Wi-Fi-IPv4-from-ipconfig>:8000` (e.g. `http://192
 
 ## Demo screenshots (local)
 
-With the app running on port 8000:
-
 ```bash
-pip install -r tools/dev-requirements.txt
+pip install -r requirements-dev.txt
 python -m playwright install chromium
-python tools/screenshots.py
-# optional: python tools/make_og.py   # regenerates static/og.jpg locally; not part of deploy
+make screens
+# Windows: scripts\screens.bat
+# Live:    python scripts/screenshots.py --url https://woza-rewards.onrender.com
 ```
 
-Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `screenshots/360/` (14 steps each: 01–13 plus 15_card_back), plus `screenshots/1280/14_desktop_1280.png`, an isolation check that two browsers keep separate rent, and rebuilds `screenshots.zip`.
+Writes `docs/screens/latest/<screen>.png` (overwritten each run), a labelled `docs/screens/latest/contact-sheet.png`, and a timestamped copy under `docs/screens/history/`. The capture list lives in `scripts/screenshots.py`.
+
+Older overflow / isolation captures from `tools/screenshots.py` are kept under `docs/screens/history/2026-10-23_baseline/`.
 
 ## Weekend feature (23–25 Oct 2026): Woza Forecast
 
