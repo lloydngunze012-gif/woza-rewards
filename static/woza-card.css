@@ -32,6 +32,7 @@
   padding: 4px 8px; border-radius: 8px;
   pointer-events: none;
 }
+.card-flip.is-flipped .card-flip-hint { display: none; }
 .membership-card {
   aspect-ratio: 1.52 / 1;
   border-radius: 18px;

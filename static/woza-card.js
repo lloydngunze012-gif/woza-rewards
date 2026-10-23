@@ -276,12 +276,11 @@
       '<div class="card-flip-inner">' +
       '<div class="card-face card-face-front">' +
       membershipCardHtml(u, compact) +
+      hint +
       "</div>" +
       '<div class="card-face card-face-back">' +
       membershipCardBackHtml(u) +
-      "</div></div>" +
-      hint +
-      "</div>"
+      "</div></div></div>"
     );
   }
 
@@ -292,9 +291,6 @@
       stage.addEventListener("click", (e) => {
         if (e.target.closest("button")) return;
         stage.classList.toggle("is-flipped");
-        const hint = stage.querySelector(".card-flip-hint");
-        if (hint) hint.remove();
-        try { sessionStorage.setItem("woza.flipHint", "1"); } catch { /* ignore */ }
       });
     });
     fillQrCodes();
