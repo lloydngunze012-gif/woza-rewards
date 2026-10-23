@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from app.models import Bill, GraceUse, Payment, User
-from app.seed import CURRENT_PERIOD, next_tier_info, status_for_months
+from app.seed import FORECAST_PERIOD, next_tier_info, status_for_months
 
 DISCLOSURE = (
     "Predicted by Woza Forecast, a rules-based model. "
@@ -203,16 +203,36 @@ def latest_late(bill: Bill, end_period: str) -> Payment | None:
 def display_bill_name(bill: Bill) -> str:
     if bill.category == "car":
         return "Car instalment"
-    return (bill.name or "this bill").lower()
+    raw = (bill.name or "This bill").strip()
+    return raw[:1].upper() + raw[1:] if raw else "This bill"
+
+
+def driver_noun(bill: Bill) -> str:
+    name = display_bill_name(bill)
+    if name == "Car instalment":
+        return "car instalment"
+    return name.lower()
 
 
 def clamp_prob(value: float) -> int:
     return int(round(max(PROB_MIN, min(PROB_MAX, value))))
 
 
-def top_drivers(drivers: list[Driver], n: int = 3) -> list[str]:
-    ranked = sorted(drivers, key=lambda d: abs(d.impact), reverse=True)
-    return [d.text for d in ranked[:n]]
+def pair_drivers(drivers: list[Driver]) -> list[str]:
+    """Strongest positive and strongest negative, at most one of each."""
+    pos = [d for d in drivers if d.impact > 0]
+    neg = [d for d in drivers if d.impact < 0]
+    out: list[str] = []
+    if pos:
+        out.append(max(pos, key=lambda d: d.impact).text)
+    if neg:
+        out.append(min(neg, key=lambda d: d.impact).text)
+    return out
+
+
+def is_demo_late(verified_by: str | None) -> bool:
+    tag = verified_by or ""
+    return tag == DEMO_LATE_TAG or tag.startswith(DEMO_LATE_TAG + ":")
 
 
 def affordability_band(probability: int) -> str:
@@ -244,11 +264,7 @@ def verified_obligation_cents(user: User, bills: list[Bill]) -> int:
 
 
 def has_simulated_late(bills: list[Bill]) -> bool:
-    return any(
-        (p.verified_by == DEMO_LATE_TAG)
-        for bill in bills
-        for p in (bill.payments or [])
-    )
+    return any(is_demo_late(p.verified_by) for bill in bills for p in (bill.payments or []))
 
 
 def forecast_bill(
@@ -276,13 +292,13 @@ def forecast_bill(
     probability = clamp_prob(raw)
 
     name = display_bill_name(bill)
+    noun = driver_noun(bill)
     streak = consecutive_on_time(bill, end)
     drivers: list[Driver] = []
     if streak >= 3:
-        sign = "(+)"
         drivers.append(
             Driver(
-                f"Paid {name} on or before the 1st for {streak} straight months (forecast) {sign}",
+                f"Paid {noun} on or before the 1st for {streak} straight months (+)",
                 float(streak),
             )
         )
@@ -291,12 +307,11 @@ def forecast_bill(
         label = MONTH_SHORT[period_month(late.period) - 1]
         drivers.append(
             Driver(
-                f"{name} marked late in {label} (forecast) (−)",
+                f"{name} marked late in {label} (−)",
                 -25.0,
             )
         )
     if n_grace:
-        # Prefer the most recent grace month name for the copy.
         recent = max(
             (g for g in (bill.grace_uses or []) if g.period in set(periods_ending(end, 12))),
             key=lambda g: g.period,
@@ -305,7 +320,7 @@ def forecast_bill(
         when = MONTH_SHORT[period_month(recent.period) - 1] if recent else "the last year"
         drivers.append(
             Driver(
-                f"{name} used a grace month in {when} (forecast) (−)",
+                f"{name} used a grace month in {when} (−)",
                 grace_adj,
             )
         )
@@ -313,7 +328,7 @@ def forecast_bill(
         pct = int(round(share * 100))
         drivers.append(
             Driver(
-                f"{name} is {pct}% of monthly bills (forecast) (−)",
+                f"{name} is {pct}% of your monthly bills (−)",
                 amount_adj,
             )
         )
@@ -321,21 +336,21 @@ def forecast_bill(
         if trend_adj < 0:
             drivers.append(
                 Driver(
-                    f"{name} is being paid later each month (forecast) (−)",
+                    f"{name} is being paid later each month (−)",
                     trend_adj,
                 )
             )
         else:
             drivers.append(
                 Driver(
-                    f"{name} is being paid earlier each month (forecast) (+)",
+                    f"{name} is being paid earlier each month (+)",
                     trend_adj,
                 )
             )
     if seasonal_adj:
         drivers.append(
             Driver(
-                f"December and January carry a seasonal adjustment (forecast) (−)",
+                "December and January carry a seasonal adjustment (−)",
                 seasonal_adj,
             )
         )
@@ -349,11 +364,11 @@ def forecast_bill(
 
     return {
         "bill_id": bill.id,
-        "name": bill.name,
+        "name": name,
         "category": bill.category,
         "amount_cents": bill.amount_cents,
         "probability_on_time_next_month": probability,
-        "drivers": top_drivers(drivers),
+        "drivers": pair_drivers(drivers),
         "components": {
             **rates,
             "trend_adj": round(trend_adj, 2),
@@ -382,7 +397,7 @@ def build_forecast(
     user: User,
     bills: list[Bill],
     *,
-    target_period: str = CURRENT_PERIOD,
+    target_period: str = FORECAST_PERIOD,
 ) -> dict:
     bills = list(bills)
     total = sum(b.amount_cents for b in bills) or 1

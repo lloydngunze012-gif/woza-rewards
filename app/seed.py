@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.models import Bill, GraceUse, Payment, Redemption, User, engine
 
-CURRENT_PERIOD = "2026-11"
 DEMO_NOW = datetime(2026, 10, 21, 9, 0, 0)
+CURRENT_PERIOD = "2026-11"
+FORECAST_PERIOD = f"{DEMO_NOW.year:04d}-{DEMO_NOW.month:02d}"
 DEMO_VERSION = 7
 
 AVAILABLE_POINTS = 12_000

@@ -20,11 +20,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import inspect, text
 
 from app.config import SECRET_KEY
-from app.forecast import DEMO_LATE_TAG, build_forecast, due_plus_days
+from app.forecast import DEMO_LATE_TAG, build_forecast, due_plus_days, is_demo_late
 from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, engine, init_db
 from app.seed import (
     CURRENT_PERIOD,
     DEMO_NOW,
+    FORECAST_PERIOD,
     REDEMPTION_ORDER,
     REDEMPTION_RATES,
     REDEMPTION_TITLES,
@@ -764,7 +765,7 @@ def bills_for_forecast(user: User, db: Session) -> list[Bill]:
 
 
 def forecast_payload(user: User, db: Session) -> dict:
-    return build_forecast(user, bills_for_forecast(user, db), target_period=CURRENT_PERIOD)
+    return build_forecast(user, bills_for_forecast(user, db), target_period=FORECAST_PERIOD)
 
 
 def bureau_summary(user: User, db: Session) -> dict:
@@ -1084,23 +1085,30 @@ def simulate_late(request: Request, body: SimulateLateBody, db: DbDep):
     )
     if not bill:
         raise HTTPException(404, "Bill not found")
-    existing = payment_for_period(bill, CURRENT_PERIOD)
-    if existing and existing.verified_by == DEMO_LATE_TAG:
+    period = FORECAST_PERIOD
+    existing = payment_for_period(bill, period)
+    if existing and is_demo_late(existing.verified_by):
         return forecast_payload(user, db)
-    if existing:
-        raise HTTPException(400, "This period already has a payment")
-    if grace_for_period(bill, CURRENT_PERIOD):
+    if grace_for_period(bill, period) and existing is None:
         raise HTTPException(400, "Grace month already used")
-    db.add(
-        Payment(
-            bill_id=bill.id,
-            period=CURRENT_PERIOD,
-            paid_at=due_plus_days(CURRENT_PERIOD, bill.due_day, 14),
-            on_time=False,
-            verified_by=DEMO_LATE_TAG,
-            points_awarded=0,
+    late_at = due_plus_days(period, bill.due_day, 14)
+    if existing:
+        original = existing.verified_by or bill.verification
+        existing.on_time = False
+        existing.points_awarded = 0
+        existing.paid_at = late_at
+        existing.verified_by = f"{DEMO_LATE_TAG}:{original}"
+    else:
+        db.add(
+            Payment(
+                bill_id=bill.id,
+                period=period,
+                paid_at=late_at,
+                on_time=False,
+                verified_by=DEMO_LATE_TAG,
+                points_awarded=0,
+            )
         )
-    )
     db.commit()
     db.expire_all()
     return forecast_payload(user, db)
@@ -1110,13 +1118,24 @@ def simulate_late(request: Request, body: SimulateLateBody, db: DbDep):
 @limiter.limit(API_RATE_LIMIT)
 def undo_late(request: Request, db: DbDep, body: EmptyBody = EmptyBody()):
     user = require_user(request, db)
-    bills = db.query(Bill).filter(Bill.user_id == user.id).all()
-    bill_ids = [b.id for b in bills]
-    if bill_ids:
-        db.query(Payment).filter(
-            Payment.bill_id.in_(bill_ids),
-            Payment.verified_by == DEMO_LATE_TAG,
-        ).delete(synchronize_session=False)
+    bills = bills_for_forecast(user, db)
+    changed = False
+    for bill in bills:
+        for pay in list(bill.payments or []):
+            if not is_demo_late(pay.verified_by):
+                continue
+            changed = True
+            tag = pay.verified_by or DEMO_LATE_TAG
+            if ":" in tag:
+                original = tag.split(":", 1)[1]
+                y, m = map(int, pay.period.split("-"))
+                pay.on_time = True
+                pay.points_awarded = bill.points_per_month
+                pay.paid_at = datetime(y, m, 1, 10, 0, 0)
+                pay.verified_by = original
+            else:
+                db.delete(pay)
+    if changed:
         db.commit()
         db.expire_all()
     return forecast_payload(user, db)

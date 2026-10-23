@@ -1227,7 +1227,7 @@
               <circle class="score-fill" cx="74" cy="74" r="62"/>
             </svg>
             <div class="forecast-ring-text">
-              <strong class="font-num" data-forecast-pct>${shown}</strong>
+              <strong class="font-num" data-forecast-pct>${shown}%</strong>
               <em>predicted</em>
             </div>
           </div>
@@ -1240,7 +1240,7 @@
               <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
               <div class="row-text">
                 <div class="row-title"><span>${escapeHtml(b.name)}</span><span class="forecast-pct">${Number(b.probability_on_time_next_month)}% predicted</span></div>
-                <div class="row-sub">${escapeHtml((b.drivers && b.drivers[0]) || "")}</div>
+                ${(b.drivers || []).slice(0, 2).map((d) => `<div class="row-sub">${escapeHtml(d)}</div>`).join("")}
               </div>
             </div>`).join("")}
         </div>
@@ -1281,7 +1281,7 @@
       const nextMonths = Number(forecastState && forecastState.overall && forecastState.overall.months_to_next_status);
       if (prefersReduced()) {
         if (ring) ring.style.setProperty("--forecast-offset", forecastOffset(to));
-        if (num) num.textContent = String(to);
+        if (num) num.textContent = to + "%";
         if (label) label.textContent = String(to);
         if (monthsEl && Number.isFinite(nextMonths)) monthsEl.textContent = String(nextMonths);
         return;
@@ -1293,11 +1293,11 @@
         const eased = 1 - Math.pow(1 - p, 3);
         const v = Math.round(from + (to - from) * eased);
         if (ring) ring.style.setProperty("--forecast-offset", forecastOffset(v));
-        if (num) num.textContent = String(v);
+        if (num) num.textContent = v + "%";
         if (label) label.textContent = String(v);
         if (p < 1) requestAnimationFrame(frame);
         else {
-          if (num) num.textContent = String(to);
+          if (num) num.textContent = to + "%";
           if (label) label.textContent = String(to);
           if (monthsEl && Number.isFinite(nextMonths)) monthsEl.textContent = String(nextMonths);
         }
