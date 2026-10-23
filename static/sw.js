@@ -1,4 +1,4 @@
-const CACHE = "woza-v10";
+const CACHE = "woza-v12";
 const PRECACHE = [
   "/",
   "/static/manifest.json",

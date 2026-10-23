@@ -8,3 +8,6 @@ venv/
 screenshots/
 screenshots.zip
 tools/.sora-bold.ttf
+.env
+.env.local
+.env.*.local

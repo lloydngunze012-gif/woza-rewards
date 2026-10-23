@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import secrets
 from datetime import datetime
 from pathlib import Path
@@ -8,11 +10,16 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session, joinedload
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from sqlalchemy import inspect, text
 
+from app.config import SECRET_KEY
 from app.models import Bill, GraceUse, Payment, Redemption, SessionLocal, User, engine, init_db
 from app.seed import (
     CURRENT_PERIOD,
@@ -31,8 +38,68 @@ from app.seed import (
 STATIC = Path(__file__).resolve().parent.parent / "static"
 SESSION_COOKIE = "woza_session"
 SESSION_MAX_AGE = 86400 * 7
+API_RATE_LIMIT = "60/minute"
+PERIOD_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])$"
+_SECRET = SECRET_KEY.encode("utf-8")
 
+CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "frame-ancestors 'none'"
+)
+
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 app = FastAPI(title="Woza Rewards")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = CSP
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+class ApiModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+def sign_session(sid: str) -> str:
+    digest = hmac.new(_SECRET, sid.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{sid}.{digest}"
+
+
+def unsigned_session(token: str | None) -> str | None:
+    if not token or "." not in token:
+        return None
+    sid, digest = token.rsplit(".", 1)
+    if not sid or not digest:
+        return None
+    expected = hmac.new(_SECRET, sid.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(digest, expected):
+        return None
+    return sid
+
+
+def resolve_period(period: str | None) -> str:
+    return period or CURRENT_PERIOD
 
 
 def get_db():
@@ -265,7 +332,7 @@ def demo_now() -> datetime:
 
 
 def session_id_from(request: Request) -> str | None:
-    return request.cookies.get(SESSION_COOKIE)
+    return unsigned_session(request.cookies.get(SESSION_COOKIE))
 
 
 def user_for_session(db: Session, sid: str | None) -> User | None:
@@ -277,7 +344,7 @@ def user_for_session(db: Session, sid: str | None) -> User | None:
 def set_session_cookie(response: Response, sid: str) -> None:
     response.set_cookie(
         SESSION_COOKIE,
-        sid,
+        sign_session(sid),
         httponly=True,
         samesite="lax",
         max_age=SESSION_MAX_AGE,
@@ -735,12 +802,12 @@ def pay_bill(user: User, db: Session, bill: Bill, period: str = CURRENT_PERIOD) 
     return pay
 
 
-class LoginBody(BaseModel):
+class LoginBody(ApiModel):
     phone: str = ""
     name: str = ""
 
 
-class ResetBody(BaseModel):
+class ResetBody(ApiModel):
     name: str = ""
 
 
@@ -766,21 +833,36 @@ def apply_member_name(user: User, raw: str) -> None:
         user.name = name
 
 
-class PayBody(BaseModel):
-    bill_id: int
+class EmptyBody(ApiModel):
+    pass
 
 
-class GraceBody(BaseModel):
-    bill_id: int
+class PayBody(ApiModel):
+    bill_id: int = Field(..., ge=1)
+    period: str | None = Field(default=None, pattern=PERIOD_PATTERN)
+    amount_cents: int | None = Field(default=None, gt=0)
 
 
-class RedeemBody(BaseModel):
+class PayAllBody(ApiModel):
+    period: str | None = Field(default=None, pattern=PERIOD_PATTERN)
+    amount_cents: int | None = Field(default=None, gt=0)
+
+
+class GraceBody(ApiModel):
+    bill_id: int = Field(..., ge=1)
+    period: str | None = Field(default=None, pattern=PERIOD_PATTERN)
+    amount_cents: int | None = Field(default=None, gt=0)
+
+
+class RedeemBody(ApiModel):
     option: str
-    points: int
+    points: int = Field(..., gt=0)
+    amount_cents: int | None = Field(default=None, gt=0)
 
 
 @app.post("/api/login")
-def login(body: LoginBody, request: Request, response: Response, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def login(request: Request, body: LoginBody, response: Response, db: DbDep):
     name = format_member_name(body.name)
     if not name:
         raise HTTPException(400, "Enter your name")
@@ -792,12 +874,14 @@ def login(body: LoginBody, request: Request, response: Response, db: DbDep):
 
 
 @app.post("/api/logout")
-def logout(request: Request, response: Response):
+@limiter.limit(API_RATE_LIMIT)
+def logout(request: Request, response: Response, body: EmptyBody = EmptyBody()):
     response.delete_cookie(SESSION_COOKIE, samesite="lax")
     return {"ok": True}
 
 
 @app.get("/api/me")
+@limiter.limit(API_RATE_LIMIT)
 def me(request: Request, db: DbDep):
     user = require_user(request, db)
     user = (
@@ -813,12 +897,13 @@ def me(request: Request, db: DbDep):
 
 
 @app.post("/api/pay")
-def pay_bill_endpoint(body: PayBody, request: Request, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def pay_bill_endpoint(request: Request, body: PayBody, db: DbDep):
     user = require_user(request, db)
     bill = db.query(Bill).filter(Bill.id == body.bill_id, Bill.user_id == user.id).first()
     if not bill:
         raise HTTPException(404, "Bill not found")
-    payment = pay_bill(user, db, bill)
+    payment = pay_bill(user, db, bill, resolve_period(body.period))
     db.commit()
     db.refresh(user)
     payload = build_me_payload(user, db)
@@ -836,8 +921,10 @@ def pay_bill_endpoint(body: PayBody, request: Request, db: DbDep):
 
 
 @app.post("/api/pay_all")
-def pay_all(request: Request, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def pay_all(request: Request, db: DbDep, body: PayAllBody = PayAllBody()):
     user = require_user(request, db)
+    period = resolve_period(body.period)
     bills = (
         db.query(Bill)
         .filter(Bill.user_id == user.id)
@@ -847,27 +934,25 @@ def pay_all(request: Request, db: DbDep):
     for bill in bills:
         if bill.verification != "through_woza":
             continue
-        if not payment_for_period(bill, CURRENT_PERIOD) and not grace_for_period(
-            bill, CURRENT_PERIOD
-        ):
-            pay_bill(user, db, bill)
+        if not payment_for_period(bill, period) and not grace_for_period(bill, period):
+            pay_bill(user, db, bill, period)
     db.commit()
     db.refresh(user)
     return build_me_payload(user, db)
 
 
 @app.post("/api/grace")
-def use_grace(body: GraceBody, request: Request, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def use_grace(request: Request, body: GraceBody, db: DbDep):
     raise HTTPException(400, "Grace months apply automatically when a payment is late")
 
 
 @app.post("/api/redeem")
-def redeem(body: RedeemBody, request: Request, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def redeem(request: Request, body: RedeemBody, db: DbDep):
     user = require_user(request, db)
     if body.option not in REDEMPTION_RATES:
         raise HTTPException(400, "Invalid option")
-    if body.points <= 0:
-        raise HTTPException(400, "Invalid points")
     if body.points > user.points:
         raise HTTPException(400, "Insufficient points")
     rate = REDEMPTION_RATES[body.option]
@@ -908,7 +993,8 @@ def redeem(body: RedeemBody, request: Request, db: DbDep):
 
 
 @app.post("/api/revoke_bank_consent")
-def revoke_bank_consent(request: Request, db: DbDep):
+@limiter.limit(API_RATE_LIMIT)
+def revoke_bank_consent(request: Request, db: DbDep, body: EmptyBody = EmptyBody()):
     user = require_user(request, db)
     user.bank_consent_active = False
     db.commit()
@@ -917,6 +1003,7 @@ def revoke_bank_consent(request: Request, db: DbDep):
 
 
 @app.post("/api/reset")
+@limiter.limit(API_RATE_LIMIT)
 def reset_demo(request: Request, response: Response, db: DbDep, body: ResetBody = ResetBody()):
     user = require_user(request, db)
     sid = user.session_key or session_id_from(request) or secrets.token_urlsafe(32)
@@ -926,8 +1013,65 @@ def reset_demo(request: Request, response: Response, db: DbDep, body: ResetBody 
     return build_me_payload(user, db)
 
 
+@app.get("/api/lender_view")
+@limiter.limit(API_RATE_LIMIT)
+def lender_view(request: Request, db: DbDep):
+    user = require_user(request, db)
+    after = bureau_summary(user, db)
+    return {
+        "before": {
+            "headline": "Before Woza",
+            "points": [
+                "No bureau file for rent or utilities",
+                "No cross-institution payment record",
+            ],
+        },
+        "after": {
+            "headline": "With Woza",
+            "on_time_months": after["on_time_months"],
+            "bill_count": after["bill_count"],
+            "monthly_display": after["monthly_display"],
+            "status": after["status"],
+            "score": after["score"],
+            "grace_unused": after["grace_unused"],
+            "membership_tier": after["membership_tier"],
+            "months_to_black": after["months_to_black"],
+            "tier_goal_line": after["tier_goal_line"],
+            "summary": (
+                f"{after['on_time_months']} on-time months, {after['bill_count']} bills, "
+                f"{after['monthly_display']}/month, {after['membership_tier']}, "
+                f"score {after['score']}, {after['grace_unused']} grace unused"
+            ),
+        },
+    }
+
+
+@app.get("/api/forecast")
+@limiter.limit(API_RATE_LIMIT)
+def forecast(request: Request, db: DbDep):
+    user = require_user(request, db)
+    bills = db.query(Bill).filter(Bill.user_id == user.id).all()
+    monthly_pts = sum(b.points_per_month for b in bills)
+    horizon = 12
+    projected_months = user.months_on_time + horizon
+    return {
+        "ai_disclosure": (
+            "This forecast is a synthetic, rules-based demo projection. "
+            "It is not a credit decision, not personalised financial advice, "
+            "and is not produced by a production machine-learning model."
+        ),
+        "method": "rules_based_demo",
+        "horizon_months": horizon,
+        "current_status": status_for_months(user.months_on_time),
+        "projected_on_time_months": projected_months,
+        "projected_status": status_for_months(projected_months),
+        "projected_points": user.points + monthly_pts * horizon,
+    }
+
+
 @app.get("/api/health")
-def health():
+@limiter.limit(API_RATE_LIMIT)
+def health(request: Request):
     return {"ok": True, "service": "woza-rewards"}
 
 

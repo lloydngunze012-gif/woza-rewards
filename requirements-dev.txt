@@ -1,0 +1,4 @@
+# Local / SSDLC tools. Not installed on Render.
+-r tools/dev-requirements.txt
+pip-audit>=2.7.3
+httpx>=0.27.2

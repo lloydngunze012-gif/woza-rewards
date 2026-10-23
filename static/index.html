@@ -636,7 +636,7 @@
       let part = "evening";
       if (h >= 5 && h < 12) part = "morning";
       else if (h >= 12 && h < 17) part = "afternoon";
-      return `Good ${part}, ${name.split(" ")[0]}`;
+      return `Good ${part}, ${escapeHtml(String(name || "").split(" ")[0] || "")}`;
     }
     function fmtRandCents(cents) {
       const whole = Math.floor(cents / 100);
@@ -702,6 +702,15 @@
     }
 
     const SLOGAN = "Pay today. Earn tomorrow.";
+    const CAL_STATUS = { paid: 1, grace: 1, due: 1, missed: 1 };
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
     let state = null;
     let busy = false;
     let rewardsTab = "redeem";
@@ -782,27 +791,27 @@
       const stops = ladder.stops.map(s => {
         const cls = [
           "tier-stop",
-          s.tier.toLowerCase(),
+          String(s.tier || "").toLowerCase().replace(/[^a-z]/g, ""),
           s.reached ? "reached" : "",
         ].filter(Boolean).join(" ");
         const inner = s.reached ? check : "";
-        return `<div class="${cls}" style="left:${s.pct}%;--pop-at:${(s.pct / 100).toFixed(2)}"><div class="tier-dot">${inner}</div></div>`;
+        return `<div class="${cls}" style="left:${Number(s.pct) || 0}%;--pop-at:${(Number(s.pct) / 100).toFixed(2)}"><div class="tier-dot">${inner}</div></div>`;
       }).join("");
       const labels = ladder.stops.map(s =>
-        `<span>${s.tier}</span>`).join("");
+        `<span>${escapeHtml(s.tier)}</span>`).join("");
       const subs = ladder.stops.map(s =>
-        `<span>${s.months} mo</span>`).join("");
+        `<span>${escapeHtml(s.months)} mo</span>`).join("");
       return `
         <div class="tier-ladder">
           <div class="tier-ladder-rail">
             <div class="tier-ladder-track"></div>
-            <div class="tier-ladder-fill" style="--fill-to:${(ladder.fill_pct / 100).toFixed(3)}"></div>
+            <div class="tier-ladder-fill" style="--fill-to:${(Number(ladder.fill_pct) / 100).toFixed(3)}"></div>
             ${stops}
-            <div class="tier-you" style="left:${ladder.marker_pct}%">${ladder.marker_label}</div>
+            <div class="tier-you" style="left:${Number(ladder.marker_pct) || 0}%">${escapeHtml(ladder.marker_label)}</div>
           </div>
           <div class="tier-ladder-labels">${labels}</div>
           <div class="tier-ladder-subs">${subs}</div>
-          <p class="tier-ladder-caption">${ladder.caption_line}</p>
+          <p class="tier-ladder-caption">${escapeHtml(ladder.caption_line)}</p>
         </div>`;
     }
 
@@ -929,9 +938,10 @@
     function billAmountLine(b, which) {
       const status = which === "home" ? b.row_status_home : b.row_status_pay;
       if (b.row_was_display && b.row_now_display) {
-        return `<span class="row-was">${b.row_was_display}</span><span class="row-now">${b.row_now_display}</span>${status ? ` · ${status}` : ""}`;
+        return `<span class="row-was">${escapeHtml(b.row_was_display)}</span><span class="row-now">${escapeHtml(b.row_now_display)}</span>${status ? ` · ${escapeHtml(status)}` : ""}`;
       }
-      return which === "home" ? (b.row_amount_home || b.amount_display) : (b.row_amount_pay || b.payment_due_line);
+      const line = which === "home" ? (b.row_amount_home || b.amount_display) : (b.row_amount_pay || b.payment_due_line);
+      return escapeHtml(line);
     }
 
     function renderHome() {
@@ -954,24 +964,24 @@
               <circle class="score-fill" cx="32" cy="32" r="27"/>
             </svg>
             <div class="score-ring-text">
-              <strong class="font-num" data-score-num>${u.score ?? 742}</strong>
-              <em>${u.score_label || "Strong"}</em>
+              <strong class="font-num" data-score-num>${Number(u.score ?? 742)}</strong>
+              <em>${escapeHtml(u.score_label || "Strong")}</em>
             </div>
           </div>
           <div>
-            <p class="muted">${u.score_caption || "Not a credit score"}</p>
-            <div class="bureau-row">${IC.shield}<span>${bureau}</span></div>
+            <p class="muted">${escapeHtml(u.score_caption || "Not a credit score")}</p>
+            <div class="bureau-row">${IC.shield}<span>${escapeHtml(bureau)}</span></div>
           </div>
         </div>
         <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Your bills</h3>
         <div class="group-list section">
           ${bills.map((b, i) => `
-            <button type="button" class="group-row bill-row" style="--i:${i}" data-goto="${b.id}">
+            <button type="button" class="group-row bill-row" style="--i:${i}" data-goto="${Number(b.id)}">
               <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
               <div class="row-text">
-                <div class="row-title">${b.name}</div>
+                <div class="row-title">${escapeHtml(b.name)}</div>
                 <div class="row-sub">${billAmountLine(b, "home")}</div>
-                <div class="row-points">${b.home_points_line}</div>
+                <div class="row-points">${escapeHtml(b.home_points_line)}</div>
               </div>
             </button>`).join("")}
           ${addBillRowHtml(bills.length)}
@@ -995,12 +1005,12 @@
         <h2 class="page-title">Payments</h2>
         <p class="page-sub">Earn points on the essentials.</p>
         <div class="panel pay-banner section">
-          <p class="muted">${p.hero_title}</p>
+          <p class="muted">${escapeHtml(p.hero_title)}</p>
           ${p.hero_you_pay_line ? `
-          <p class="big font-num">${p.hero_you_pay_line}</p>
-          ${p.hero_bills_line ? `<p class="muted" style="margin-top:4px">${p.hero_bills_line}</p>` : ""}` : `
-          <p class="big font-num">${p.hero_amount}${p.hero_amount_suffix || ""}</p>`}
-          ${p.hero_earn_line ? `<p class="row-points" style="margin-top:6px">${p.hero_earn_line}</p>` : ""}
+          <p class="big font-num">${escapeHtml(p.hero_you_pay_line)}</p>
+          ${p.hero_bills_line ? `<p class="muted" style="margin-top:4px">${escapeHtml(p.hero_bills_line)}</p>` : ""}` : `
+          <p class="big font-num">${escapeHtml(p.hero_amount)}${escapeHtml(p.hero_amount_suffix || "")}</p>`}
+          ${p.hero_earn_line ? `<p class="row-points" style="margin-top:6px">${escapeHtml(p.hero_earn_line)}</p>` : ""}
         </div>
         <div class="group-list section">
           ${p.bills.map(b => paymentRow(b)).join("")}
@@ -1026,15 +1036,15 @@
       } else if (b.paid) {
         action = `<span class="badge badge-paid">Paid ✓</span>`;
       } else {
-        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="pay-${b.id}">Pay</button>`;
+        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="pay-${Number(b.id)}">Pay</button>`;
       }
       return `
-        <div class="group-row bill-row" id="bill-${b.id}">
+        <div class="group-row bill-row" id="bill-${Number(b.id)}">
           <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
           <div class="row-text">
-            <div class="row-title">${b.name}</div>
+            <div class="row-title">${escapeHtml(b.name)}</div>
             <div class="row-sub">${billAmountLine(b, "pay")}</div>
-            <div class="row-points">${b.points_line}</div>
+            <div class="row-points">${escapeHtml(b.points_line)}</div>
           </div>
           <div class="row-action">${action}</div>
         </div>`;
@@ -1047,8 +1057,8 @@
         ${membershipCard(u, true)}
         <div class="panel section">
           <p class="muted">Woza cash</p>
-          <p class="font-num" style="font-size:1.4rem">${u.woza_cash_display}</p>
-          <p class="muted" style="margin-top:6px">${u.woza_cash_subline}</p>
+          <p class="font-num" style="font-size:1.4rem">${escapeHtml(u.woza_cash_display)}</p>
+          <p class="muted" style="margin-top:6px">${escapeHtml(u.woza_cash_subline)}</p>
         </div>
         <div class="tabs">
           <button type="button" class="tab ${rewardsTab==="redeem"?"active":""}" data-rtab="redeem">Redeem</button>
@@ -1068,12 +1078,12 @@
       if (!panel) return;
       if (rewardsTab === "redeem") {
         panel.innerHTML = `<div class="group-list redeem-list">${r.redemption_options.map(o => `
-          <button type="button" class="group-row" data-opt="${o.id}">
+          <button type="button" class="group-row" data-opt="${escapeHtml(o.id)}">
             <span class="icon-wrap">${IC[REDEEM_IC[o.id]] || IC.gift}</span>
             <div class="row-text">
-              <div class="row-title">${o.title}</div>
-              <div class="row-value">${o.value_row}</div>
-              <div class="row-rate">${o.rate_short || o.rate}</div>
+              <div class="row-title">${escapeHtml(o.title)}</div>
+              <div class="row-value">${escapeHtml(o.value_row)}</div>
+              <div class="row-rate">${escapeHtml(o.rate_short || o.rate)}</div>
             </div>
             ${IC.chevron}
           </button>`).join("")}</div>`;
@@ -1086,33 +1096,33 @@
         const nextTier = b.next_tier || "Black";
         panel.innerHTML = `
           <div class="panel">
-            <h3>Your ${tier} tier</h3>
-            ${b.gold_unlocks.map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Your ${escapeHtml(tier)} tier</h3>
+            ${b.gold_unlocks.map(t => `<div class="benefit-line">${escapeHtml(t)}</div>`).join("")}
           </div>
           <div class="panel" style="margin-top:16px">
-            <h3>Unlock with ${nextTier}</h3>
-            ${(b.black_unlocks || []).map(t => `<div class="benefit-line">${t}</div>`).join("")}
+            <h3>Unlock with ${escapeHtml(nextTier)}</h3>
+            ${(b.black_unlocks || []).map(t => `<div class="benefit-line">${escapeHtml(t)}</div>`).join("")}
           </div>`;
       } else {
         const b = r.benefits;
         const tl = r.progress_timeline_label || "Last 12 months";
         panel.innerHTML = `
           <div class="panel timeline">
-            <p class="muted" style="margin-bottom:8px">Grace months: ${b.grace_months_earned} earned, ${b.grace_months_used} used · ${b.grace_months} available</p>
+            <p class="muted" style="margin-bottom:8px">Grace months: ${Number(b.grace_months_earned)} earned, ${Number(b.grace_months_used)} used · ${Number(b.grace_months)} available</p>
             ${(r.progress || []).map((p, i) => `
               <div class="progress-item${progressOpen === i ? " open" : ""}">
                 <button type="button" class="progress-head" data-progress="${i}">
                   <span class="icon-wrap">${IC[p.category] || IC.rent}</span>
                   <span class="row-text">
-                    <div class="row-title">${p.bill_name}</div>
-                    <div class="row-sub">${p.months_on_time} months on time</div>
+                    <div class="row-title">${escapeHtml(p.bill_name)}</div>
+                    <div class="row-sub">${Number(p.months_on_time)} months on time</div>
                   </span>
                   ${IC.chevron}
                 </button>
                 ${progressOpen === i ? `
-                <p class="cal-caption">${tl}</p>
+                <p class="cal-caption">${escapeHtml(tl)}</p>
                 <div class="cal-grid">${(p.months || []).map(m => `
-                  <div class="cal-cell ${m.status}"><span class="mo">${m.label}</span><span class="mark">${m.mark}</span></div>`).join("")}
+                  <div class="cal-cell ${CAL_STATUS[m.status] ? m.status : "missed"}"><span class="mo">${escapeHtml(m.label)}</span><span class="mark">${escapeHtml(m.mark)}</span></div>`).join("")}
                 </div>` : ""}
               </div>`).join("")}
           </div>`;
@@ -1132,16 +1142,16 @@
       document.getElementById("screenProfile").innerHTML = `
         <h2 class="page-title">Profile</h2>
         <div class="panel" style="text-align:center;padding:24px 16px 16px">
-          <div class="avatar-init">${u.initials}</div>
-          <h3 style="font-family:Sora,sans-serif">${u.name}</h3>
-          <p style="color:var(--verified);margin-top:8px;font-size:0.88rem">Verified member since ${u.member_since}</p>
-          <p class="muted" style="margin-top:6px;font-size:0.88rem">${u.status || "Gold"} tier · ${u.months_to_next_tier ?? 12} months to ${u.next_tier || "Black"}</p>
+          <div class="avatar-init">${escapeHtml(u.initials)}</div>
+          <h3 style="font-family:Sora,sans-serif">${escapeHtml(u.name)}</h3>
+          <p style="color:var(--verified);margin-top:8px;font-size:0.88rem">Verified member since ${escapeHtml(u.member_since)}</p>
+          <p class="muted" style="margin-top:6px;font-size:0.88rem">${escapeHtml(u.status || "Gold")} tier · ${Number(u.months_to_next_tier ?? 12)} months to ${escapeHtml(u.next_tier || "Black")}</p>
         </div>
         <h3 class="section" style="font-family:Sora,sans-serif;font-weight:600;margin-bottom:10px">Linked bank</h3>
         <div class="group-list section">
           <button type="button" class="linked-row" id="linkedBankBtn">
-            <div class="row-title">${bank.label}</div>
-            <div class="row-sub">${bank.consent_active ? bank.consent_until : "Consent revoked"}</div>
+            <div class="row-title">${escapeHtml(bank.label)}</div>
+            <div class="row-sub">${bank.consent_active ? escapeHtml(bank.consent_until) : "Consent revoked"}</div>
           </button>
         </div>
         <div class="profile-actions section">
@@ -1257,9 +1267,9 @@
 
     function openPaySheet(bill) {
       openSheet(`
-        <h3>${bill.pay_sheet_title}</h3>
-        ${bill.pay_sheet_detail ? `<p class="muted" style="margin-top:8px">${bill.pay_sheet_detail}</p>` : ""}
-        ${bill.pay_sheet_points_line ? `<p class="row-points" style="margin-top:8px">${bill.pay_sheet_points_line}</p>` : ""}
+        <h3>${escapeHtml(bill.pay_sheet_title)}</h3>
+        ${bill.pay_sheet_detail ? `<p class="muted" style="margin-top:8px">${escapeHtml(bill.pay_sheet_detail)}</p>` : ""}
+        ${bill.pay_sheet_points_line ? `<p class="row-points" style="margin-top:8px">${escapeHtml(bill.pay_sheet_points_line)}</p>` : ""}
         <div class="sheet-actions">
           <button type="button" class="btn-primary" id="confirmPay">Confirm</button>
           <button type="button" class="btn-secondary" id="cancelPay">Cancel</button>
@@ -1277,10 +1287,10 @@
         if (navigator.vibrate) navigator.vibrate(12);
         openSheet(`
           <svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg>
-          <h3>${ev.title || "Paid"}</h3>
-          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">${ev.points_line || `+${fmtPts(pts)} points`}</p>
-          ${ev.worth_rent_line ? `<p class="row-points" style="margin-top:8px">${ev.worth_rent_line}</p>` : ""}
-          <p class="muted" style="margin-top:8px">${ev.new_balance_line || ""}</p>
+          <h3>${escapeHtml(ev.title || "Paid")}</h3>
+          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">${escapeHtml(ev.points_line || `+${fmtPts(pts)} points`)}</p>
+          ${ev.worth_rent_line ? `<p class="row-points" style="margin-top:8px">${escapeHtml(ev.worth_rent_line)}</p>` : ""}
+          <p class="muted" style="margin-top:8px">${escapeHtml(ev.new_balance_line || "")}</p>
           <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
         document.getElementById("donePay").onclick = closeSheet;
       });
@@ -1310,10 +1320,10 @@
       const pts = state.user.available_points;
       const rate = o.rate_multiplier ?? 1.5;
       openSheet(`
-        <h3>${o.title}</h3>
-        <p class="sheet-value" id="valOut">${redeemValueLine(opt, pts, rate)}</p>
+        <h3>${escapeHtml(o.title)}</h3>
+        <p class="sheet-value" id="valOut">${escapeHtml(redeemValueLine(opt, pts, rate))}</p>
         <label class="muted" for="ptsIn">Points</label>
-        <input type="number" id="ptsIn" min="1" value="${pts}" style="margin-top:8px" />
+        <input type="number" id="ptsIn" min="1" value="${Number(pts)}" style="margin-top:8px" />
         <div class="redeem-chips">
           <button type="button" class="redeem-chip active" data-chip="all">All</button>
           <button type="button" class="redeem-chip" data-chip="half">Half</button>
@@ -1352,7 +1362,7 @@
         const msg = data.event?.success_message
           || `${data.event?.value_display || ""} redeemed`;
         if (navigator.vibrate) navigator.vibrate(12);
-        openSheet(`<svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg><h3>Redeemed</h3><p class="muted">${msg}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
+        openSheet(`<svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg><h3>Redeemed</h3><p class="muted">${escapeHtml(msg)}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
         document.getElementById("doneR").onclick = closeSheet;
       });
     }

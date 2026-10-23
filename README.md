@@ -100,3 +100,5 @@ Each run **clears** `screenshots/` first, then writes `screenshots/390/` and `sc
 | POST | `/api/grace` | `{ "bill_id": 1 }` |
 | POST | `/api/redeem` | `{ "option": "cash", "points": 10000 }` |
 | POST | `/api/reset` | Reseed this session only (keeps the name) |
+| GET | `/api/lender_view` | Partner snapshot (session required) |
+| GET | `/api/forecast` | Rules-based demo forecast (session required) |

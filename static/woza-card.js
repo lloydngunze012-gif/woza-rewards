@@ -87,6 +87,15 @@
     return "tier-" + key;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function memberSinceYear(u) {
     const m = (u.member_since || "2023").match(/\d{4}/);
     return m ? m[0] : "2023";
@@ -230,9 +239,9 @@
       '"></div>' +
       '<span class="mem-back-scan">Scan to verify on-time record</span>' +
       '<span class="mem-back-foot">' +
-      tier +
+      escapeHtml(tier) +
       " · Member since " +
-      since +
+      escapeHtml(since) +
       "</span></div>" +
       '<div class="mem-microtext" aria-hidden="true">' +
       microtextLine() +
@@ -307,7 +316,7 @@
       '<div class="mem-sweep" aria-hidden="true"></div>' +
       '<div class="mem-sheen" aria-hidden="true"></div>' +
       '<span class="mem-tier">' +
-      tier +
+      escapeHtml(tier) +
       "</span>" +
       '<div class="mem-content">' +
       '<div class="mem-top">' +
@@ -322,10 +331,10 @@
       '<div class="mem-footer">' +
       '<div class="mem-member">' +
       '<span class="mem-name">' +
-      u.name +
+      escapeHtml(u.name) +
       "</span>" +
       '<span class="mem-since">Member since ' +
-      memberSinceYear(u) +
+      escapeHtml(memberSinceYear(u)) +
       "</span></div>" +
       '<span class="mem-slogan">' +
       slogan +
