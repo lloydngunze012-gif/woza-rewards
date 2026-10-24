@@ -249,6 +249,8 @@ def redeem_value_row(opt_id: str, points: int) -> str:
     if opt_id == "electricity":
         n = about_units(rands, units["electricity"])
         return f"{display} of electricity, about {n} units"
+    if opt_id == "ride":
+        return f"{display} off a ride"
     if opt_id == "data":
         n = about_units(rands, units["data"])
         return f"{display} of data, about {n} GB"

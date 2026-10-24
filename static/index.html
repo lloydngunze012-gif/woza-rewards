@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=25" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=27" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -765,7 +765,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=25"></script>
+  <script src="/static/woza-card.js?v=27"></script>
 
   <script>
     const IC = {
@@ -787,7 +787,7 @@
       shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
       chevron: '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>',
     };
-    const REDEEM_IC = { rent: "home", electricity: "zap", data: "wifi", fuel: "fuel", groceries: "basket", ebucks: "gift", cash: "landmark" };
+    const REDEEM_IC = { rent: "home", electricity: "zap", ride: "car", data: "wifi", fuel: "fuel", groceries: "basket", ebucks: "gift", cash: "landmark" };
     const LAUNCH_BILLS = [
       { title: "Fibre and Wi-Fi", icon: "wifi" },
       { title: "Insurance", icon: "shield" },
@@ -831,6 +831,7 @@
       const units = redeemUnits();
       if (id === "rent") return `${display} off rent`;
       if (id === "electricity") return `${display} of electricity, about ${aboutUnits(rands, units.electricity)} units`;
+      if (id === "ride") return `${display} off a ride`;
       if (id === "data") return `${display} of data, about ${aboutUnits(rands, units.data)} GB`;
       if (id === "fuel") return `${display} of fuel, about ${aboutUnits(rands, units.fuel)} litres`;
       if (id === "groceries") return `${display} at partner stores`;
@@ -1347,6 +1348,7 @@
     const PHOTO = {
       rent: "/static/img/rent.webp",
       electricity: "/static/img/electricity.webp",
+      ride: "/static/img/ride.webp",
       airtime: "/static/img/airtime.webp",
       fuel: "/static/img/fuel.webp",
       groceries: "/static/img/groceries.webp",
@@ -1354,9 +1356,9 @@
       card: "/static/img/card.webp",
       cash: "/static/img/cash.webp",
     };
-    const TILE_PHOTO = { home: "rent", airtime: "airtime", fuel: "fuel", money: "card" };
+    const TILE_PHOTO = { home: "rent", airtime: "airtime", fuel: "fuel", money: "cash" };
     const CARD_PHOTO = {
-      rent: "rent", electricity: "electricity", data: "airtime", air: "airtime",
+      rent: "rent", electricity: "electricity", ride: "ride", data: "airtime", air: "airtime",
       pump: "fuel", shop: "groceries", restaurant: "restaurants", bucks: "card", cash: "cash",
     };
 
@@ -1369,7 +1371,7 @@
         cards: [
           { option: "rent", points: 12000, art: "rent", title: "R180 off next rent", get: "1.5c per point", confirm: "Redeem 12 000 points for R180 off your next rent?" },
           { option: "electricity", points: 8000, art: "electricity", title: "R120 prepaid electricity, about 55 units", get: "1.5c per point", confirm: "Redeem 8 000 points for R120 prepaid electricity?" },
-          { option: "rent", points: 6000, art: "rent", title: "R90 off next rent", get: "1.5c per point", confirm: "Redeem 6 000 points for R90 off your next rent?" },
+          { option: "ride", points: 6000, art: "ride", title: "R90 off a ride", get: "1.5c per point", confirm: "Redeem 6 000 points for R90 off a ride?" },
         ],
       },
       {
@@ -1380,7 +1382,6 @@
         cards: [
           { option: "data", points: 12000, art: "data", title: "R120 of data, about 2 GB", get: "1c per point", confirm: "Redeem 12 000 points for R120 of data?" },
           { option: "airtime", points: 6000, art: "air", title: "R60 airtime", get: "1c per point", confirm: "Redeem 6 000 points for R60 airtime?" },
-          { option: "airtime", points: 3000, art: "air", title: "R30 airtime", get: "1c per point", confirm: "Redeem 3 000 points for R30 airtime?" },
         ],
       },
       {
@@ -1400,9 +1401,9 @@
         rate: "up to 1c per point",
         art: "money",
         cards: [
-          { option: "ebucks", points: 12000, art: "bucks", title: "R120 in eBucks", get: "1c per point", confirm: "Redeem 12 000 points for R120 in eBucks?" },
           { option: "cash", points: 12000, art: "cash", title: "R60 cash to bank", get: "0.5c per point", confirm: "Redeem 12 000 points for R60 cash to bank?" },
           { option: "cash", points: 6000, art: "cash", title: "R30 cash to bank", get: "0.5c per point", confirm: "Redeem 6 000 points for R30 cash to bank?" },
+          { option: "ebucks", points: 12000, art: "bucks", title: "R120 in eBucks", get: "1c per point", confirm: "Redeem 12 000 points for R120 in eBucks?" },
         ],
       },
     ];

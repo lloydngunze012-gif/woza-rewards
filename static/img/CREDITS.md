@@ -3,11 +3,15 @@
 Converted to 800 px-wide WebP, under 60 KB, for Woza Rewards tiles and cards.
 
 ## rent.webp
-- Use: Home & bills tile; R180 / R90 off next rent
+- Use: Home & bills tile; R180 off next rent
 - Source: curated photo supplied for this project
 
 ## electricity.webp
 - Use: R120 prepaid electricity card
+- Source: curated photo supplied for this project
+
+## ride.webp
+- Use: R90 off a ride card
 - Source: curated photo supplied for this project
 
 ## airtime.webp
@@ -29,10 +33,10 @@ Converted to 800 px-wide WebP, under 60 KB, for Woza Rewards tiles and cards.
 - Source: curated photo supplied for this project
 
 ## card.webp
-- Use: Money tile; R120 in eBucks card
+- Use: R120 in eBucks card
 - Source: https://unsplash.com/photos/1563013544-824ae1b704d3
 - Licence: Unsplash License (commercial use, no attribution required)
 
 ## cash.webp
-- Use: Cash to bank cards
+- Use: Money tile; cash to bank cards
 - Source: curated photo supplied for this project
