@@ -853,6 +853,15 @@ def pay_bill(user: User, db: Session, bill: Bill, period: str = CURRENT_PERIOD) 
         applied = min(user.woza_cash_cents, bill.amount_cents)
         user.woza_cash_cents -= applied
     db.flush()
+    paid_this_period = (
+        db.query(Payment)
+        .join(Bill, Payment.bill_id == Bill.id)
+        .filter(Bill.user_id == user.id, Payment.period == period)
+        .count()
+    )
+    if paid_this_period == 1:
+        user.months_on_time += 1
+    bill.months_on_time = (bill.months_on_time or 0) + 1
     return pay
 
 

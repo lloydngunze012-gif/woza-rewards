@@ -45,6 +45,7 @@ SCREENS = [
     "rewards",
     "rewards_category",
     "redeem_confirm",
+    "rewards_voucher",
     "record",
     "share_consent",
     "lender_view",
@@ -291,6 +292,34 @@ def capture_redeem_confirm(page: Page) -> None:
     page.wait_for_selector("#sheet.open >> text=Redeem 12 000 points", timeout=8_000)
 
 
+def capture_rewards_voucher(page: Page, base_url: str) -> None:
+    show_tab(page, "rewards")
+    page.locator('#screenRewards [data-cat="home"]').click()
+    page.wait_for_selector("#rewardCarousel [data-redeem-opt]", timeout=10_000)
+    page.locator("#rewardCarousel [data-redeem-opt]").first.click()
+    page.wait_for_selector("#confirmRedeem", timeout=10_000)
+    page.locator("#confirmRedeem").click()
+    page.wait_for_selector("#myVouchers .voucher-row", timeout=15_000)
+    page.wait_for_function(
+        """() => {
+          const el = document.querySelector('#rewardsPts');
+          return el && el.textContent.replace(/\\s/g, '') === '0';
+        }""",
+        timeout=10_000,
+    )
+    show_tab(page, "home")
+    page.wait_for_selector("#screenHome .mem-points", timeout=10_000)
+    home_pts = page.locator("#screenHome .mem-points").first.inner_text()
+    show_tab(page, "rewards")
+    page.wait_for_selector("#myVouchers .voucher-row", timeout=10_000)
+    rewards_pts = page.locator("#rewardsPts").inner_text()
+    if home_pts.replace(" ", "") != rewards_pts.replace(" ", ""):
+        raise RuntimeError(
+            f"Home gold card points {home_pts!r} do not match Rewards {rewards_pts!r}"
+        )
+    print(f"    home gold card {home_pts} matches Rewards after redeem", flush=True)
+
+
 def capture_record(page: Page) -> None:
     show_tab(page, "record")
     page.wait_for_selector("#screenRecord:not(.hidden)", timeout=10_000)
@@ -357,6 +386,7 @@ CAPTURE_FNS = {
     "rewards": lambda page, base_url: capture_rewards(page),
     "rewards_category": lambda page, base_url: capture_rewards_category(page),
     "redeem_confirm": lambda page, base_url: capture_redeem_confirm(page),
+    "rewards_voucher": lambda page, base_url: capture_rewards_voucher(page, base_url),
     "record": lambda page, base_url: capture_record(page),
     "share_consent": lambda page, base_url: capture_share_consent(page),
     "lender_view": lambda page, base_url: capture_lender_view(page),
@@ -504,8 +534,10 @@ def main() -> int:
                             "document.querySelector('#screenHome [data-card-flip]')?.click()"
                         )
                         page.wait_for_timeout(400)
-                    if name in ("pay_rent", "settings", "share_consent", "grace_confirm", "rewards_category", "redeem_confirm"):
+                    if name in ("pay_rent", "settings", "share_consent", "grace_confirm", "rewards_category", "redeem_confirm", "rewards_voucher"):
                         close_sheets(page)
+                    if name == "rewards_voucher":
+                        reset_demo(page, base_url)
                     if name == "what_if":
                         undo = page.locator("#undoLateBtn")
                         if undo.count() and undo.is_visible():

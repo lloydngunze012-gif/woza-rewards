@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#5B2BD9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Woza" />
+  <link rel="apple-touch-icon" href="/static/icon-192.png" />
+  <link rel="apple-touch-startup-image" href="/static/splash.png" />
   <title>Woza</title>
   <meta name="description" content="Rewards and a credit record for the bills you already pay on time." />
   <meta property="og:type" content="website" />
@@ -21,17 +26,18 @@
   <meta name="twitter:image" content="https://woza-rewards.onrender.com/static/og.jpg?v=3" />
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/static/icon-192.png" type="image/png" sizes="192x192" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=23" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=24" />
   <style>
     :root {
       --bg: #F6F4FB;
       --surface: #FFFFFF;
       --ink: #1C1530;
-      --muted: #6B6485;
+      --muted: #565070;
       --line: #E9E4F5;
       --primary: #5B2BD9;
       --primary-soft: #EEE8FD;
@@ -49,7 +55,7 @@
       --t-ripple: 450ms;
       --t-flip: 600ms;
       --t-sweep: 700ms;
-      --t-score: 1000ms;
+      --t-score: 600ms;
       --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
       --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -62,7 +68,7 @@
       color: var(--ink);
       -webkit-tap-highlight-color: transparent;
     }
-    .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.045em; }
     .phone {
       max-width: 390px; min-height: 100%; margin: 0 auto; position: relative;
       padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
@@ -101,15 +107,20 @@
     }
     .login-slogan { text-align: center; }
     .btn-primary {
-      width: 100%; height: 48px; margin-top: 12px;
+      width: 100%; height: 52px; margin-top: 12px;
       background: var(--primary); color: #fff; border-radius: 14px;
       font-weight: 600; font-size: 1rem;
     }
     .btn-primary:disabled { opacity: 0.45; pointer-events: none; }
+    .btn-primary:active, .btn-primary.is-press { background: #5428C8; }
     .btn-secondary {
-      width: 100%; height: 48px; margin-top: 10px;
+      width: 100%; height: 52px; margin-top: 10px;
       background: var(--primary-soft); color: var(--primary);
       border-radius: 14px; font-weight: 600;
+    }
+    .btn-row-pay {
+      width: auto; min-width: 72px; height: 52px; margin-top: 0;
+      padding: 0 16px; font-size: 0.88rem; white-space: nowrap;
     }
     .err { color: #dc2626; font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
 
@@ -119,7 +130,7 @@
     .home-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .home-head .page-title { flex: 1; min-width: 0; }
     .home-gear {
-      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
       background: var(--surface); border: 1px solid var(--line);
       display: flex; align-items: center; justify-content: center;
     }
@@ -130,7 +141,7 @@
     }
     .home-status.is-nudge {
       color: var(--gold); width: 100%; background: none; border: none;
-      padding: 0; font: inherit; font-weight: 600; font-size: 0.88rem;
+      padding: 8px 0; min-height: 44px; font: inherit; font-weight: 600; font-size: 0.88rem;
     }
     .streak-dots {
       display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
@@ -157,17 +168,30 @@
       text-align: center; color: var(--muted); font-size: 0.82rem;
       margin: 16px 0 8px;
     }
-    .rewards-pts { font-size: 1.6rem; line-height: 1.15; }
+    .rewards-pts { font-size: 1.6rem; line-height: 1.15; letter-spacing: -0.045em; }
     .rewards-worth { margin-top: 4px; }
     .rewards-cash { margin-top: 8px; font-size: 0.78rem; }
     .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .cat-tile {
       display: block; width: 100%; text-align: left;
       background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
-      padding: 12px;
+      padding: 0; overflow: hidden;
     }
-    .cat-tile svg { display: block; width: 100%; height: auto; }
-    .cat-tile .row-title { margin-top: 8px; }
+    .cat-photo {
+      display: block; position: relative;
+      width: 100%; aspect-ratio: 4 / 3;
+      background-size: cover; background-position: center;
+    }
+    .cat-photo::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(28, 21, 48, 0.78) 0%, rgba(28, 21, 48, 0.18) 48%, transparent 72%);
+    }
+    .cat-copy {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+      padding: 10px 12px 12px;
+    }
+    .cat-tile .row-title, .cat-tile .row-sub { color: #fff; }
+    .cat-tile .row-sub { opacity: 0.92; }
     .reward-carousel {
       display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
       padding: 4px 2px 10px; margin: 0 -4px;
@@ -177,7 +201,10 @@
       background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
       padding: 14px;
     }
-    .reward-card svg { display: block; width: 72px; height: 50px; margin-bottom: 8px; }
+    .reward-photo {
+      height: 88px; border-radius: 12px; margin-bottom: 10px;
+      background-size: cover; background-position: center;
+    }
     .reward-cost { font-size: 0.78rem; color: var(--muted); margin: 6px 0 10px; }
     .voucher-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
     .voucher-row:last-child { border-bottom: none; }
@@ -195,12 +222,12 @@
       transform: rotate(-90deg); transform-origin: 74px 74px;
     }
     .forecast-ring-text { position: relative; z-index: 1; text-align: center; }
-    .forecast-ring strong { font-family: "Sora", sans-serif; font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1; }
+    .forecast-ring strong { font-family: "Sora", sans-serif; font-size: 2rem; font-variant-numeric: tabular-nums; letter-spacing: -0.045em; line-height: 1; }
     .forecast-ring em { font-style: normal; font-size: 0.72rem; color: var(--muted); display: block; margin-top: 4px; }
     .forecast-hero-line { font-family: "Sora", sans-serif; font-weight: 600; font-size: 1.02rem; margin-top: 4px; }
     .forecast-status { text-align: center; font-size: 0.92rem; font-weight: 600; margin: -8px 0 16px; }
     .forecast-bill .row-title { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-    .forecast-pct { font-family: "Sora", sans-serif; font-weight: 700; color: var(--primary); white-space: nowrap; }
+    .forecast-pct { font-family: "Sora", sans-serif; font-weight: 700; color: var(--primary); white-space: nowrap; letter-spacing: -0.045em; }
     .forecast-disclosure { font-size: 0.72rem; color: var(--muted); line-height: 1.4; margin-top: 8px; margin-bottom: 20px; text-align: center; }
 
     .debit-label { font-size: 0.72rem; color: var(--muted); margin-top: 3px; font-weight: 500; line-height: 1.35; word-break: break-word; }
@@ -210,6 +237,9 @@
       padding: 16px; margin-bottom: 24px;
     }
     .panel h3 { font-family: "Sora", sans-serif; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+    .muted, .row-sub, .gold-perks, .home-status, .page-sub, .forecast-disclosure, .debit-label, .rewards-worth, .rewards-cash {
+      text-wrap: pretty;
+    }
     .muted { color: var(--muted); font-size: 0.875rem; line-height: 1.45; }
     .tier-ladder { margin-top: 4px; max-width: 100%; overflow: hidden; }
     .tier-ladder-rail {
@@ -330,7 +360,7 @@
 
     .page-title { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.35rem; margin-bottom: 4px; }
     .page-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
-    .pay-banner .big { font-family: "Sora", sans-serif; font-size: 1.5rem; font-weight: 700; margin: 4px 0; }
+    .pay-banner .big { font-family: "Sora", sans-serif; font-size: 1.5rem; font-weight: 700; margin: 4px 0; letter-spacing: -0.045em; }
 
     .nav {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -340,8 +370,8 @@
       z-index: 60;
     }
     .nav button {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      font-size: 0.68rem; color: var(--muted); padding: 8px 0;
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      font-size: 0.68rem; color: var(--muted); padding: 8px 0; min-height: 44px;
     }
     .nav button.active { color: var(--primary); }
     .nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
@@ -350,6 +380,7 @@
     .tab {
       flex: 1; text-align: center; padding: 10px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
       color: var(--muted); background: var(--surface); border: 1px solid var(--line);
+      min-height: 44px;
     }
     .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
@@ -384,11 +415,35 @@
     .launch-bill:last-child { border-bottom: none; }
     .launch-bill .row-text { flex: 1; min-width: 0; }
     .toast {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
-      font-size: 0.85rem; z-index: 60; opacity: 0; transition: opacity 0.2s;
+      position: fixed; left: 50%; bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+      transform: translateX(-50%) translateY(8px);
+      background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px;
+      font-size: 0.85rem; z-index: 180; opacity: 0; pointer-events: none;
+      max-width: calc(100% - 40px); width: max-content;
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out;
     }
-    .toast.show { opacity: 1; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .streak-moment {
+      position: fixed; left: 50%; top: 0; transform: translateX(-50%);
+      width: 100%; max-width: 390px; height: 100%;
+      z-index: 190; pointer-events: none;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(28, 21, 48, 0.22);
+    }
+    .streak-moment.show { display: flex; }
+    .streak-moment-line {
+      color: #fff; font-size: 1.4rem; text-align: center; padding: 0 24px;
+      letter-spacing: -0.04em; text-shadow: 0 2px 16px rgba(28, 21, 48, 0.45);
+    }
+    .streak-moment-burst i {
+      position: absolute; top: 36%; left: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
+      animation: confettiBurst 1.15s var(--ease-out) var(--d, 0ms) both;
+    }
+    @keyframes confettiBurst {
+      from { transform: translate(-50%, 0) scale(1); opacity: 1; }
+      to { transform: translate(var(--x, 0px), 130px) scale(0.55); opacity: 0; }
+    }
     .busy { pointer-events: none; opacity: 0.85; }
     .benefit-line { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
     .benefit-line:last-child { border-bottom: none; }
@@ -396,7 +451,7 @@
     .progress-item + .progress-item { border-top: 1px solid var(--line); }
     .progress-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
-      padding: 12px 0; text-align: left;
+      padding: 12px 0; text-align: left; min-height: 44px;
     }
     .progress-head .row-text { flex: 1; min-width: 0; }
     .progress-head .chevron { transition: transform 0.2s ease; }
@@ -463,7 +518,7 @@
       animation: scoreDraw var(--t-score) var(--ease-out) 650ms both;
     }
     .home-intro .streak-ring .score-fill {
-      animation: streakDraw var(--t-score) var(--ease-out) 650ms both;
+      animation: streakDraw var(--t-score) var(--ease-out) both;
     }
     .home-intro .score-ring em {
       opacity: 0;
@@ -516,7 +571,8 @@
       .home-intro .score-ring em,
       .home-intro .bill-row,
       .sheet-check-mark,
-      .btn-ripple { animation: none !important; }
+      .btn-ripple,
+      .streak-moment-burst i { animation: none !important; }
       .home-intro .card-flip,
       .home-intro .tier-you,
       .home-intro .score-ring em,
@@ -527,6 +583,7 @@
       .sheet-check-mark { stroke-dashoffset: 0 !important; }
       .is-press, .is-release, .tap-press { transform: none !important; transition: none !important; }
       #appView .screen { transition: none !important; }
+      .toast { transition: none !important; }
     }
     .profile-actions { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .profile-actions a, .profile-actions button {
@@ -690,12 +747,16 @@
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="sheet"><div id="sheetBody"></div></div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="streak-moment" id="streakMoment" aria-live="polite">
+    <div class="streak-moment-burst" aria-hidden="true"></div>
+    <p class="font-num streak-moment-line" id="streakMomentLine"></p>
+  </div>
       </div>
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=23"></script>
+  <script src="/static/woza-card.js?v=24"></script>
 
   <script>
     const IC = {
@@ -817,6 +878,8 @@
     let progressOpen = 0;
     let homeIntroPlayed = false;
     let homeIntroTimers = [];
+    let streakHold = null;
+    let toastTimer = null;
     let forecastState = null;
     let lenderState = null;
     const SCORE_MAX = 850;
@@ -828,7 +891,8 @@
       const el = document.getElementById("toast");
       el.textContent = msg;
       el.classList.add("show");
-      setTimeout(() => el.classList.remove("show"), 2800);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
     }
 
     function apiErrorMessage(err) {
@@ -1005,15 +1069,79 @@
         home.classList.remove("home-intro");
         return;
       }
-      countEase(ptsEl, 0, pts, 900, 250);
+      countEase(ptsEl, 0, pts, 600, 0);
       const streakEl = home.querySelector("[data-streak-num]");
       const streakTo = Number((u && u.months_on_time) || 0);
-      if (streakEl) countEase(streakEl, 0, streakTo, 900, 400);
-      homeIntroTimers.push(setTimeout(() => { displayPoints = pts; }, 1200));
+      if (streakEl) countEase(streakEl, 0, streakTo, 600, 0);
+      homeIntroTimers.push(setTimeout(() => { displayPoints = pts; }, 600));
       homeIntroTimers.push(setTimeout(() => {
         markHomeIntroDone();
         home.classList.remove("home-intro");
-      }, 1800));
+      }, 700));
+    }
+
+    function displayStreakMonths(u) {
+      if (streakHold != null) return streakHold;
+      return Number((u && u.months_on_time) || 0);
+    }
+
+    function playStreakMoment(months, done) {
+      const el = document.getElementById("streakMoment");
+      const line = document.getElementById("streakMomentLine");
+      const burst = el && el.querySelector(".streak-moment-burst");
+      if (!el || !line) { if (done) done(); return; }
+      line.textContent = months + " months on time";
+      if (burst) burst.replaceChildren();
+      if (burst && !prefersReduced()) {
+        for (let i = 0; i < 16; i++) {
+          const p = document.createElement("i");
+          p.style.setProperty("--x", (Math.random() * 260 - 130).toFixed(0) + "px");
+          p.style.setProperty("--d", (Math.random() * 180).toFixed(0) + "ms");
+          p.style.background = i % 2 ? "#5B2BD9" : "#C9A24A";
+          burst.appendChild(p);
+        }
+      }
+      el.classList.add("show");
+      const wait = prefersReduced() ? 400 : 1200;
+      setTimeout(() => {
+        el.classList.remove("show");
+        if (burst) burst.replaceChildren();
+        if (done) done();
+      }, wait);
+    }
+
+    function tickStreakWheel(from, to) {
+      streakHold = null;
+      const ring = document.querySelector("#streakWheel .streak-ring");
+      const num = document.querySelector("#streakWheel [data-streak-num]");
+      if (ring) ring.style.setProperty("--forecast-offset", streakOffset(to));
+      if (num) {
+        if (prefersReduced()) num.textContent = String(to);
+        else countEase(num, from, to, 400, 0);
+      }
+      setTimeout(() => {
+        if (state) {
+          renderHome();
+          bindMembershipCards();
+        }
+      }, prefersReduced() ? 0 : 420);
+    }
+
+    function afterSuccessfulPay(prevMonths, prevPts, data, paidToast) {
+      const nextMonths = Number((data.user && data.user.months_on_time) || 0);
+      const celebrate = nextMonths > prevMonths;
+      if (celebrate) streakHold = prevMonths;
+      state = data;
+      renderAll();
+      animatePoints(prevPts, userPoints(state.user));
+      if (celebrate) {
+        playStreakMoment(nextMonths, () => {
+          tickStreakWheel(prevMonths, nextMonths);
+          if (paidToast) toast(paidToast);
+        });
+      } else if (paidToast) {
+        toast(paidToast);
+      }
     }
 
     function animatePoints(from, to) {
@@ -1090,7 +1218,7 @@
 
     function renderHome() {
       const u = state.user;
-      const months = Number(u.months_on_time ?? 0);
+      const months = displayStreakMonths(u);
       const bills = paymentBills();
       const tight = months > 0 ? tightForecastBill() : null;
       const tightPay = tight ? (paymentBillById(tight.bill_id) || nextActionBill()) : null;
@@ -1192,7 +1320,7 @@
       } else if (b.paid) {
         action = `<span class="badge badge-paid">Paid ✓</span>`;
       } else {
-        action = `<button type="button" class="btn-primary" style="width:auto;height:36px;padding:0 12px;font-size:0.82rem;white-space:nowrap" id="pay-${Number(b.id)}">Pay</button>`;
+        action = `<button type="button" class="btn-primary btn-row-pay" id="pay-${Number(b.id)}">Pay</button>`;
       }
       return `
         <div class="group-row bill-row" id="bill-${Number(b.id)}">
@@ -1207,19 +1335,20 @@
         </div>`;
     }
 
-    const ILLUS = {
-      home: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><path d="M22 40L60 16l38 24v24H22z" fill="#5B2BD9"/><rect x="52" y="44" width="16" height="20" fill="#C9A24A"/></svg>',
-      airtime: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="44" y="12" width="32" height="48" rx="8" fill="#5B2BD9"/><circle cx="60" cy="50" r="3" fill="#C9A24A"/><path d="M78 28c6 6 6 16 0 22M86 22c12 12 12 26 0 38" fill="none" stroke="#C9A24A" stroke-width="3" stroke-linecap="round"/></svg>',
-      fuel: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="24" y="20" width="36" height="36" rx="6" fill="#5B2BD9"/><rect x="32" y="28" width="20" height="12" rx="2" fill="#C9A24A"/><path d="M60 28h10l10 10v18" fill="none" stroke="#5B2BD9" stroke-width="4" stroke-linecap="round"/><circle cx="88" cy="56" r="8" fill="#C9A24A"/></svg>',
-      money: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="20" y="22" width="80" height="30" rx="6" fill="#5B2BD9"/><circle cx="60" cy="37" r="8" fill="#C9A24A"/><rect x="28" y="48" width="28" height="6" rx="2" fill="#C9A24A"/></svg>',
-      rent: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M12 28L36 12l24 16v16H12z" fill="#5B2BD9"/><rect x="30" y="32" width="12" height="12" fill="#C9A24A"/></svg>',
-      electricity: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M40 8L22 28h14l-4 16 22-22H38z" fill="#C9A24A"/></svg>',
-      data: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 28c11-10 29-10 40 0M24 34c7-6 17-6 24 0" fill="none" stroke="#5B2BD9" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="40" r="3" fill="#C9A24A"/></svg>',
-      air: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="26" y="8" width="20" height="34" rx="5" fill="#5B2BD9"/><circle cx="36" cy="35" r="2.5" fill="#C9A24A"/></svg>',
-      pump: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="16" y="14" width="24" height="26" rx="4" fill="#5B2BD9"/><path d="M40 20h8l8 8v12" fill="none" stroke="#C9A24A" stroke-width="3" stroke-linecap="round"/></svg>',
-      shop: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 22h40l-4 20H20z" fill="#5B2BD9"/><path d="M24 22l6-10h12l6 10" fill="none" stroke="#C9A24A" stroke-width="3"/></svg>',
-      bucks: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="14" y="16" width="44" height="20" rx="4" fill="#5B2BD9"/><circle cx="36" cy="26" r="6" fill="#C9A24A"/></svg>',
-      cash: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 36V22l20-8 20 8v14H16z" fill="#5B2BD9"/><rect x="30" y="26" width="12" height="10" fill="#C9A24A"/></svg>',
+    const PHOTO = {
+      home: "/static/img/home.webp",
+      electricity: "/static/img/electricity.webp",
+      phone: "/static/img/phone.webp",
+      fuel: "/static/img/fuel.webp",
+      groceries: "/static/img/groceries.webp",
+      card: "/static/img/card.webp",
+      cash: "/static/img/cash.webp",
+      rent: "/static/img/rent.webp",
+    };
+    const TILE_PHOTO = { home: "home", airtime: "phone", fuel: "fuel", money: "card" };
+    const CARD_PHOTO = {
+      rent: "rent", electricity: "electricity", data: "phone", air: "phone",
+      pump: "fuel", shop: "groceries", bucks: "card", cash: "cash",
     };
 
     const REWARD_CATS = [
@@ -1286,9 +1415,12 @@
         <div class="cat-grid section">
           ${REWARD_CATS.map((c) => `
             <button type="button" class="cat-tile" data-cat="${escapeHtml(c.id)}">
-              ${ILLUS[c.art]}
-              <div class="row-title">${escapeHtml(c.name)}</div>
-              <div class="row-sub">${escapeHtml(c.rate)}</div>
+              <span class="cat-photo" style="background-image:url('${PHOTO[TILE_PHOTO[c.id]] || PHOTO.home}')">
+                <span class="cat-copy">
+                  <span class="row-title">${escapeHtml(c.name)}</span>
+                  <span class="row-sub">${escapeHtml(c.rate)}</span>
+                </span>
+              </span>
             </button>`).join("")}
         </div>
         <div class="panel section" id="myVouchers">
@@ -1318,7 +1450,7 @@
         : `<button type="button" class="btn-primary" disabled>Need ${fmtPts(need)} more points</button>`;
       return `
         <div class="reward-card">
-          ${ILLUS[card.art] || ILLUS.rent}
+          <div class="reward-photo" style="background-image:url('${PHOTO[CARD_PHOTO[card.art]] || PHOTO.rent}')"></div>
           <div class="row-title">${escapeHtml(card.title)}</div>
           <div class="row-sub">${escapeHtml(card.get)}</div>
           <div class="reward-cost">${fmtPts(card.points)} pts</div>
@@ -1566,6 +1698,7 @@
         renderRecord();
         renderHome();
         bindMembershipCards();
+        toast("Shared");
       });
     }
 
@@ -1709,22 +1842,24 @@
       document.getElementById("cancelPay").onclick = closeSheet;
       document.getElementById("confirmPay").onclick = () => withBusy(async () => {
         const prev = state.user.available_points;
+        const prevMonths = Number(state.user.months_on_time || 0);
         const data = await api("/api/pay", { method: "POST", body: JSON.stringify({ bill_id: bill.id }) });
         closeSheet();
-        state = data;
-        renderAll();
-        animatePoints(prev, state.user.available_points);
-        const pts = data.event?.points_added || 0;
         const ev = data.event || {};
         if (navigator.vibrate) navigator.vibrate(12);
-        openSheet(`
-          <svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg>
-          <h3>${escapeHtml(ev.title || "Paid")}</h3>
-          <p class="font-num" style="font-size:1.5rem;color:var(--verified)">${escapeHtml(ev.points_line || `+${fmtPts(pts)} points`)}</p>
-          ${ev.worth_rent_line ? `<p class="row-points" style="margin-top:8px">${escapeHtml(ev.worth_rent_line)}</p>` : ""}
-          <p class="muted" style="margin-top:8px">${escapeHtml(ev.new_balance_line || "")}</p>
-          <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
-        document.getElementById("donePay").onclick = closeSheet;
+        afterSuccessfulPay(prevMonths, prev, data, ev.title || "Paid");
+        const nextMonths = Number((data.user && data.user.months_on_time) || 0);
+        if (nextMonths <= prevMonths) {
+          const pts = ev.points_added || 0;
+          openSheet(`
+            <svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg>
+            <h3>${escapeHtml(ev.title || "Paid")}</h3>
+            <p class="font-num" style="font-size:1.5rem;color:var(--verified)">${escapeHtml(ev.points_line || `+${fmtPts(pts)} points`)}</p>
+            ${ev.worth_rent_line ? `<p class="row-points" style="margin-top:8px">${escapeHtml(ev.worth_rent_line)}</p>` : ""}
+            <p class="muted" style="margin-top:8px">${escapeHtml(ev.new_balance_line || "")}</p>
+            <div class="sheet-actions"><button type="button" class="btn-primary" id="donePay">Done</button></div>`);
+          document.getElementById("donePay").onclick = closeSheet;
+        }
       });
     }
 
@@ -1739,11 +1874,10 @@
       document.getElementById("cancelAll").onclick = closeSheet;
       document.getElementById("confirmAll").onclick = () => withBusy(async () => {
         const prev = state.user.available_points;
-        state = await api("/api/pay_all", { method: "POST", body: JSON.stringify({}) });
+        const prevMonths = Number(state.user.months_on_time || 0);
+        const data = await api("/api/pay_all", { method: "POST", body: JSON.stringify({}) });
         closeSheet();
-        renderAll();
-        animatePoints(prev, state.user.available_points);
-        toast("All Woza bills paid");
+        afterSuccessfulPay(prevMonths, prev, data, "All Woza bills paid");
       });
     }
 
