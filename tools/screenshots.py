@@ -228,41 +228,18 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
     def open_rewards_redeem() -> None:
         restore_start()
         open_rewards()
-        page.wait_for_selector("#screenRewards [data-membership-card]", timeout=10_000)
-        page.wait_for_selector("#screenRewards .mem-points", timeout=10_000)
-        page.wait_for_selector("#screenRewards >> text=12 000", timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="rent"]', timeout=10_000)
-        page.wait_for_selector("text=Towards next rent", timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="electricity"]', timeout=10_000)
-        page.wait_for_selector("text=Prepaid electricity", timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="data"]', timeout=10_000)
-        page.wait_for_selector("text=Data and airtime", timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="fuel"]', timeout=10_000)
-        page.wait_for_selector("text=Fuel", timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="groceries"]', timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="ebucks"]', timeout=10_000)
-        page.wait_for_selector('#rewardsPanel button[data-opt="cash"]', timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R180 off rent", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R180 of electricity, about 55 units", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R120 of data, about 2 GB", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R120 of fuel, about 5 litres", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R120 at partner stores", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R120 in eBucks", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=R60 to your account", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=1.5c per point", timeout=10_000)
-        if page.locator('#rewardsPanel button[data-opt="flights"]').count():
-            raise RuntimeError("Flights should be removed from redeem")
+        page.wait_for_selector("#rewardsPts", timeout=10_000)
+        page.wait_for_selector("#screenRewards .cat-tile", timeout=10_000)
+        page.wait_for_selector("#myVouchers", timeout=10_000)
 
     run_step(results, key("07_rewards"), page, out_dir, "07_rewards", open_rewards_redeem, full_page=True)
 
     def open_redeem_sheet() -> None:
         open_rewards_redeem()
-        page.locator('#rewardsPanel button[data-opt="rent"]').click()
-        page.wait_for_selector("#sheet.open", timeout=10_000)
+        page.locator('#screenRewards [data-cat="home"]').click()
+        page.wait_for_selector("#rewardCarousel .reward-card", timeout=10_000)
+        page.locator("#rewardCarousel [data-redeem-opt]").first.click()
         page.wait_for_selector("#confirmRedeem", timeout=10_000)
-        page.wait_for_selector("#sheet >> text=All", timeout=10_000)
-        page.wait_for_selector("#sheet >> text=Half", timeout=10_000)
-        page.wait_for_selector("#sheet >> text=R180 off rent", timeout=10_000)
 
     run_step(results, key("08_redeem_sheet"), page, out_dir, "08_redeem_sheet", open_redeem_sheet, full_page=False)
 
@@ -270,26 +247,15 @@ def run_all_steps(page: Page, out_dir: Path, results: dict[str, str], prefix: st
         open_redeem_sheet()
         js_click(page, "confirmRedeem")
         page.wait_for_selector("text=Redeemed", timeout=15_000)
-        page.wait_for_selector("text=added to Woza cash", timeout=10_000)
-        js_click(page, "doneR")
-        page.wait_for_function(
-            "() => !document.getElementById('sheet')?.classList.contains('open')",
-            timeout=10_000,
-        )
 
     run_step(results, key("09_redeem_success"), page, out_dir, "09_redeem_success", redeem_success, full_page=False)
 
-    def benefits_tab() -> None:
+    def rewards_perks() -> None:
         open_rewards()
-        if page.locator("#doneR").count():
-            js_click(page, "doneR")
-            page.wait_for_timeout(200)
-        page.click('#screenRewards button[data-rtab="benefits"]')
-        page.wait_for_selector("text=Your Gold tier", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=shared with the credit bureau", timeout=10_000)
-        page.wait_for_selector("#rewardsPanel >> text=Priority access to partner offers", timeout=10_000)
+        close_sheets(page)
+        page.wait_for_selector("text=Your Gold perks", timeout=10_000)
 
-    run_step(results, key("10_rewards_benefits_tab"), page, out_dir, "10_rewards_benefits_tab", benefits_tab)
+    run_step(results, key("10_rewards_perks"), page, out_dir, "10_rewards_perks", rewards_perks)
 
     def record_tab() -> None:
         close_sheets(page)

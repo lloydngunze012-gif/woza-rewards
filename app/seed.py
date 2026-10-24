@@ -237,12 +237,13 @@ def score_label(score: int) -> str:
     return "Building"
 
 
-REDEMPTION_ORDER = ["rent", "electricity", "data", "fuel", "groceries", "ebucks", "cash"]
+REDEMPTION_ORDER = ["rent", "electricity", "data", "airtime", "fuel", "groceries", "ebucks", "cash"]
 
 REDEMPTION_RATES = {
     "rent": 1.5,
     "electricity": 1.5,
     "data": 1.0,
+    "airtime": 1.0,
     "fuel": 1.0,
     "groceries": 1.0,
     "ebucks": 1.0,
@@ -253,10 +254,26 @@ REDEMPTION_TITLES = {
     "rent": "Towards next rent",
     "electricity": "Prepaid electricity",
     "data": "Data and airtime",
+    "airtime": "Airtime",
     "fuel": "Fuel",
     "groceries": "Groceries",
     "ebucks": "eBucks",
     "cash": "Cash out to bank",
+}
+
+VOUCHER_TITLES = {
+    ("rent", 12_000): "R180 off next rent",
+    ("electricity", 8_000): "R120 prepaid electricity, about 55 units",
+    ("rent", 6_000): "R90 off next rent",
+    ("data", 12_000): "R120 of data, about 2 GB",
+    ("airtime", 6_000): "R60 airtime",
+    ("airtime", 3_000): "R30 airtime",
+    ("fuel", 12_000): "R120 of fuel, about 5 litres",
+    ("groceries", 12_000): "R120 at partner stores",
+    ("groceries", 6_000): "R60 at partner stores",
+    ("ebucks", 12_000): "R120 in eBucks",
+    ("cash", 12_000): "R60 cash to bank",
+    ("cash", 6_000): "R30 cash to bank",
 }
 
 # approximate, update at launch

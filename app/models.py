@@ -97,6 +97,9 @@ class Redemption(Base):
     option = Column(String, nullable=False)
     points_spent = Column(Integer, nullable=False)
     value_cents = Column(Integer, nullable=False)
+    voucher_code = Column(String, nullable=True)
+    voucher_title = Column(String, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="redemptions")

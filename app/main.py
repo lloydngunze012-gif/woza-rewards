@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
@@ -29,6 +29,7 @@ from app.seed import (
     REDEMPTION_ORDER,
     REDEMPTION_RATES,
     REDEMPTION_TITLES,
+    VOUCHER_TITLES,
     REDEEM_UNITS_PER_RAND,
     next_tier_info,
     purge_stale_sessions,
@@ -134,6 +135,14 @@ def migrate_schema() -> None:
         statements.append("ALTER TABLE users ADD COLUMN session_key VARCHAR")
     if "created_at" not in cols:
         statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
+    if insp.has_table("redemptions"):
+        rcols = {c["name"] for c in insp.get_columns("redemptions")}
+        if "voucher_code" not in rcols:
+            statements.append("ALTER TABLE redemptions ADD COLUMN voucher_code VARCHAR")
+        if "voucher_title" not in rcols:
+            statements.append("ALTER TABLE redemptions ADD COLUMN voucher_title VARCHAR")
+        if "expires_at" not in rcols:
+            statements.append("ALTER TABLE redemptions ADD COLUMN expires_at DATETIME")
     with engine.begin() as conn:
         for stmt in statements:
             conn.execute(text(stmt))
@@ -178,6 +187,22 @@ def fmt_rand_cents(cents: int) -> str:
 
 def redeem_value_cents(points: int, rate: float) -> int:
     return int(points * rate)
+
+
+def make_voucher_code() -> str:
+    return "WZA-" + secrets.token_hex(3).upper()
+
+
+def voucher_title_for(option: str, points: int, value_cents: int) -> str:
+    titled = VOUCHER_TITLES.get((option, points))
+    if titled:
+        return titled
+    display = fmt_rand_cents(value_cents)
+    if option == "rent":
+        return f"{display} off next rent"
+    if option == "cash":
+        return f"{display} cash to bank"
+    return f"{display} {REDEMPTION_TITLES.get(option, option)}"
 
 
 RENT_REDEEM_RATE = REDEMPTION_RATES["rent"]
@@ -591,6 +616,7 @@ def build_me_payload(user: User, db: Session) -> dict:
             )
         progress_payments.append(
             {
+                "bill_id": b.id,
                 "bill_name": b.name,
                 "category": b.category,
                 "months_on_time": b.months_on_time,
@@ -721,9 +747,22 @@ def build_me_payload(user: User, db: Session) -> dict:
                     "option": r.option,
                     "points_spent": r.points_spent,
                     "value_display": fmt_rand_cents(r.value_cents),
-                    "created_at": r.created_at.isoformat(),
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                    "code": r.voucher_code,
+                    "title": r.voucher_title,
+                    "expires": r.expires_at.strftime("%d %b %Y").lstrip("0") if r.expires_at else None,
                 }
                 for r in redemptions
+            ],
+            "vouchers": [
+                {
+                    "code": r.voucher_code,
+                    "title": r.voucher_title,
+                    "value": fmt_rand_cents(r.value_cents),
+                    "expires": r.expires_at.strftime("%d %b %Y").lstrip("0"),
+                }
+                for r in redemptions
+                if r.voucher_code
             ],
             "benefits": {
                 "grace_months": user.grace_months,
@@ -996,12 +1035,18 @@ def redeem(request: Request, body: RedeemBody, db: DbDep):
     user.redeemed_points += body.points
     if body.option in ("cash", "rent"):
         user.woza_cash_cents += value_cents
+    expires = demo_now() + timedelta(days=90)
+    title = voucher_title_for(body.option, body.points, value_cents)
+    code = make_voucher_code()
     db.add(
         Redemption(
             user_id=user.id,
             option=body.option,
             points_spent=body.points,
             value_cents=value_cents,
+            voucher_code=code,
+            voucher_title=title,
+            expires_at=expires,
             created_at=demo_now(),
         )
     )
@@ -1012,6 +1057,12 @@ def redeem(request: Request, body: RedeemBody, db: DbDep):
     rent_label = period_due_short(rent_period)
     value_display = fmt_rand_cents(value_cents)
     payload = build_me_payload(user, db)
+    voucher = {
+        "code": code,
+        "title": title,
+        "value": value_display,
+        "expires": expires.strftime("%d %b %Y").lstrip("0"),
+    }
     event = {
         "kind": "redeem",
         "option": body.option,
@@ -1024,6 +1075,7 @@ def redeem(request: Request, body: RedeemBody, db: DbDep):
             f"{value_display} added to Woza cash for your {rent_label} rent"
         )
     payload["event"] = event
+    payload["voucher"] = voucher
     return payload
 
 

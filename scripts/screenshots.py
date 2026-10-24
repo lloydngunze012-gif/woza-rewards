@@ -41,9 +41,10 @@ SCREENS = [
     "home_card_back",
     "payments",
     "pay_rent",
-    "grace",
+    "grace_confirm",
     "rewards",
-    "rewards_benefits",
+    "rewards_category",
+    "redeem_confirm",
     "record",
     "share_consent",
     "lender_view",
@@ -255,28 +256,39 @@ def capture_pay_rent(page: Page) -> None:
 
 
 def capture_grace(page: Page) -> None:
-    show_tab(page, "home")
-    grace_btn = page.locator("#homeNudge")
-    if grace_btn.count() and grace_btn.is_visible():
-        grace_btn.click()
-        page.wait_for_selector("#sheet.open", timeout=8_000)
-        page.wait_for_selector("#confirmGrace", timeout=8_000)
-        return
+    capture_grace_confirm(page)
+
+
+def capture_grace_confirm(page: Page) -> None:
     show_tab(page, "record")
-    page.wait_for_selector("text=Grace months", timeout=10_000)
     page.wait_for_selector("#screenRecord .progress-item", timeout=10_000)
+    if not page.locator("[data-record-grace]").count():
+        page.locator("#screenRecord [data-progress]").first.click()
+        page.wait_for_selector("[data-record-grace]", timeout=8_000)
+    page.locator("[data-record-grace]").first.click()
+    page.wait_for_selector("#sheet.open", timeout=8_000)
+    page.wait_for_selector("#confirmGrace", timeout=8_000)
 
 
 def capture_rewards(page: Page) -> None:
     show_tab(page, "rewards")
-    page.click('#screenRewards button[data-rtab="redeem"]')
-    page.wait_for_selector("#rewardsPanel [data-opt]", timeout=10_000)
+    page.wait_for_selector("#screenRewards .cat-tile", timeout=10_000)
+    page.wait_for_selector("#myVouchers", timeout=10_000)
+    page.wait_for_selector("#rewardsPts", timeout=10_000)
 
 
-def capture_rewards_benefits(page: Page) -> None:
+def capture_rewards_category(page: Page) -> None:
     show_tab(page, "rewards")
-    page.click('#screenRewards button[data-rtab="benefits"]')
-    page.wait_for_selector("#rewardsPanel >> text=Your Gold tier", timeout=10_000)
+    page.locator('#screenRewards [data-cat="home"]').click()
+    page.wait_for_selector("#sheet.open", timeout=10_000)
+    page.wait_for_selector("#rewardCarousel .reward-card", timeout=10_000)
+
+
+def capture_redeem_confirm(page: Page) -> None:
+    capture_rewards_category(page)
+    page.locator("#rewardCarousel [data-redeem-opt]").first.click()
+    page.wait_for_selector("#confirmRedeem", timeout=10_000)
+    page.wait_for_selector("#sheet.open >> text=Redeem 12 000 points", timeout=8_000)
 
 
 def capture_record(page: Page) -> None:
@@ -341,9 +353,10 @@ CAPTURE_FNS = {
     "home_card_back": lambda page, base_url: capture_home_card_back(page),
     "payments": lambda page, base_url: capture_payments(page),
     "pay_rent": lambda page, base_url: capture_pay_rent(page),
-    "grace": lambda page, base_url: capture_grace(page),
+    "grace_confirm": lambda page, base_url: capture_grace_confirm(page),
     "rewards": lambda page, base_url: capture_rewards(page),
-    "rewards_benefits": lambda page, base_url: capture_rewards_benefits(page),
+    "rewards_category": lambda page, base_url: capture_rewards_category(page),
+    "redeem_confirm": lambda page, base_url: capture_redeem_confirm(page),
     "record": lambda page, base_url: capture_record(page),
     "share_consent": lambda page, base_url: capture_share_consent(page),
     "lender_view": lambda page, base_url: capture_lender_view(page),
@@ -491,7 +504,7 @@ def main() -> int:
                             "document.querySelector('#screenHome [data-card-flip]')?.click()"
                         )
                         page.wait_for_timeout(400)
-                    if name in ("pay_rent", "settings", "share_consent"):
+                    if name in ("pay_rent", "settings", "share_consent", "grace_confirm", "rewards_category", "redeem_confirm"):
                         close_sheets(page)
                     if name == "what_if":
                         undo = page.locator("#undoLateBtn")

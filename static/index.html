@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=22" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=23" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -157,6 +157,31 @@
       text-align: center; color: var(--muted); font-size: 0.82rem;
       margin: 16px 0 8px;
     }
+    .rewards-pts { font-size: 1.6rem; line-height: 1.15; }
+    .rewards-worth { margin-top: 4px; }
+    .rewards-cash { margin-top: 8px; font-size: 0.78rem; }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cat-tile {
+      display: block; width: 100%; text-align: left;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+      padding: 12px;
+    }
+    .cat-tile svg { display: block; width: 100%; height: auto; }
+    .cat-tile .row-title { margin-top: 8px; }
+    .reward-carousel {
+      display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+      padding: 4px 2px 10px; margin: 0 -4px;
+    }
+    .reward-card {
+      flex: 0 0 78%; scroll-snap-align: start;
+      background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
+      padding: 14px;
+    }
+    .reward-card svg { display: block; width: 72px; height: 50px; margin-bottom: 8px; }
+    .reward-cost { font-size: 0.78rem; color: var(--muted); margin: 6px 0 10px; }
+    .voucher-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .voucher-row:last-child { border-bottom: none; }
+    .gold-perks { font-size: 0.82rem; line-height: 1.4; }
     .forecast-hero { text-align: center; padding: 20px 16px 16px; }
     .forecast-ring {
       width: 148px; height: 148px; border-radius: 50%;
@@ -670,7 +695,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=22"></script>
+  <script src="/static/woza-card.js?v=23"></script>
 
   <script>
     const IC = {
@@ -992,7 +1017,7 @@
     }
 
     function animatePoints(from, to) {
-      const nodes = document.querySelectorAll("[data-membership-card] .mem-points");
+      const nodes = document.querySelectorAll("[data-membership-card] .mem-points, #rewardsPts");
       const write = (v) => nodes.forEach((el) => { el.textContent = fmtPts(v); });
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         displayPoints = to;
@@ -1176,65 +1201,170 @@
             <div class="row-title">${escapeHtml(b.name)}</div>
             <div class="row-sub">${billAmountLine(b, "pay")}</div>
             <div class="row-points">${escapeHtml(b.points_line)}</div>
+            ${b.is_bank_debit && b.car_verified ? `<div class="debit-label">Paid by debit order · confirmed by your bank</div>` : ""}
           </div>
           <div class="row-action">${action}</div>
         </div>`;
     }
 
+    const ILLUS = {
+      home: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><path d="M22 40L60 16l38 24v24H22z" fill="#5B2BD9"/><rect x="52" y="44" width="16" height="20" fill="#C9A24A"/></svg>',
+      airtime: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="44" y="12" width="32" height="48" rx="8" fill="#5B2BD9"/><circle cx="60" cy="50" r="3" fill="#C9A24A"/><path d="M78 28c6 6 6 16 0 22M86 22c12 12 12 26 0 38" fill="none" stroke="#C9A24A" stroke-width="3" stroke-linecap="round"/></svg>',
+      fuel: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="24" y="20" width="36" height="36" rx="6" fill="#5B2BD9"/><rect x="32" y="28" width="20" height="12" rx="2" fill="#C9A24A"/><path d="M60 28h10l10 10v18" fill="none" stroke="#5B2BD9" stroke-width="4" stroke-linecap="round"/><circle cx="88" cy="56" r="8" fill="#C9A24A"/></svg>',
+      money: '<svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="120" height="72" rx="14" fill="#EEE8FD"/><rect x="20" y="22" width="80" height="30" rx="6" fill="#5B2BD9"/><circle cx="60" cy="37" r="8" fill="#C9A24A"/><rect x="28" y="48" width="28" height="6" rx="2" fill="#C9A24A"/></svg>',
+      rent: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M12 28L36 12l24 16v16H12z" fill="#5B2BD9"/><rect x="30" y="32" width="12" height="12" fill="#C9A24A"/></svg>',
+      electricity: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M40 8L22 28h14l-4 16 22-22H38z" fill="#C9A24A"/></svg>',
+      data: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 28c11-10 29-10 40 0M24 34c7-6 17-6 24 0" fill="none" stroke="#5B2BD9" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="40" r="3" fill="#C9A24A"/></svg>',
+      air: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="26" y="8" width="20" height="34" rx="5" fill="#5B2BD9"/><circle cx="36" cy="35" r="2.5" fill="#C9A24A"/></svg>',
+      pump: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="16" y="14" width="24" height="26" rx="4" fill="#5B2BD9"/><path d="M40 20h8l8 8v12" fill="none" stroke="#C9A24A" stroke-width="3" stroke-linecap="round"/></svg>',
+      shop: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 22h40l-4 20H20z" fill="#5B2BD9"/><path d="M24 22l6-10h12l6 10" fill="none" stroke="#C9A24A" stroke-width="3"/></svg>',
+      bucks: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><rect x="14" y="16" width="44" height="20" rx="4" fill="#5B2BD9"/><circle cx="36" cy="26" r="6" fill="#C9A24A"/></svg>',
+      cash: '<svg viewBox="0 0 72 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="72" height="50" rx="10" fill="#EEE8FD"/><path d="M16 36V22l20-8 20 8v14H16z" fill="#5B2BD9"/><rect x="30" y="26" width="12" height="10" fill="#C9A24A"/></svg>',
+    };
+
+    const REWARD_CATS = [
+      {
+        id: "home",
+        name: "Home & bills",
+        rate: "up to 1.5c per point",
+        art: "home",
+        cards: [
+          { option: "rent", points: 12000, art: "rent", title: "R180 off next rent", get: "1.5c per point", confirm: "Redeem 12 000 points for R180 off your next rent?" },
+          { option: "electricity", points: 8000, art: "electricity", title: "R120 prepaid electricity, about 55 units", get: "1.5c per point", confirm: "Redeem 8 000 points for R120 prepaid electricity?" },
+          { option: "rent", points: 6000, art: "rent", title: "R90 off next rent", get: "1.5c per point", confirm: "Redeem 6 000 points for R90 off your next rent?" },
+        ],
+      },
+      {
+        id: "airtime",
+        name: "Airtime & data",
+        rate: "1c per point",
+        art: "airtime",
+        cards: [
+          { option: "data", points: 12000, art: "data", title: "R120 of data, about 2 GB", get: "1c per point", confirm: "Redeem 12 000 points for R120 of data?" },
+          { option: "airtime", points: 6000, art: "air", title: "R60 airtime", get: "1c per point", confirm: "Redeem 6 000 points for R60 airtime?" },
+          { option: "airtime", points: 3000, art: "air", title: "R30 airtime", get: "1c per point", confirm: "Redeem 3 000 points for R30 airtime?" },
+        ],
+      },
+      {
+        id: "fuel",
+        name: "Fuel & groceries",
+        rate: "1c per point",
+        art: "fuel",
+        cards: [
+          { option: "fuel", points: 12000, art: "pump", title: "R120 of fuel, about 5 litres", get: "1c per point", confirm: "Redeem 12 000 points for R120 of fuel?" },
+          { option: "groceries", points: 12000, art: "shop", title: "R120 at partner stores", get: "1c per point", confirm: "Redeem 12 000 points for R120 at partner stores?" },
+          { option: "groceries", points: 6000, art: "shop", title: "R60 at partner stores", get: "1c per point", confirm: "Redeem 6 000 points for R60 at partner stores?" },
+        ],
+      },
+      {
+        id: "money",
+        name: "Money",
+        rate: "up to 1c per point",
+        art: "money",
+        cards: [
+          { option: "ebucks", points: 12000, art: "bucks", title: "R120 in eBucks", get: "1c per point", confirm: "Redeem 12 000 points for R120 in eBucks?" },
+          { option: "cash", points: 12000, art: "cash", title: "R60 cash to bank", get: "0.5c per point", confirm: "Redeem 12 000 points for R60 cash to bank?" },
+          { option: "cash", points: 6000, art: "cash", title: "R30 cash to bank", get: "0.5c per point", confirm: "Redeem 6 000 points for R30 cash to bank?" },
+        ],
+      },
+    ];
+
     function renderRewards() {
       const u = state.user;
-      if (rewardsTab !== "benefits") rewardsTab = "redeem";
+      const pts = userPoints(u);
+      const worth = fmtRandCents(redeemCents(pts, 1.5));
+      const cash = u.woza_cash_display || "R0";
+      const due = dueShortDate();
+      const vouchers = ((state.rewards && state.rewards.vouchers) || []).filter((v) => v && v.code);
       document.getElementById("screenRewards").innerHTML = `
         <h2 class="page-title">Rewards</h2>
-        ${membershipCard(u, true)}
         <div class="panel section">
-          <p class="muted">Woza cash</p>
-          <p class="font-num" style="font-size:1.4rem">${escapeHtml(u.woza_cash_display)}</p>
-          <p class="muted" style="margin-top:6px">${escapeHtml(u.woza_cash_subline)}</p>
+          <p class="font-num rewards-pts"><span id="rewardsPts">${fmtPts(displayPointsInitialized ? displayPoints : pts)}</span> points</p>
+          <p class="muted rewards-worth">worth up to ${escapeHtml(worth)} off your rent</p>
+          <p class="muted rewards-cash">Woza cash ${escapeHtml(cash)} · applied to your ${escapeHtml(due)} rent</p>
         </div>
-        <div class="tabs">
-          <button type="button" class="tab ${rewardsTab==="redeem"?"active":""}" data-rtab="redeem">Redeem</button>
-          <button type="button" class="tab ${rewardsTab==="benefits"?"active":""}" data-rtab="benefits">Benefits</button>
+        <div class="cat-grid section">
+          ${REWARD_CATS.map((c) => `
+            <button type="button" class="cat-tile" data-cat="${escapeHtml(c.id)}">
+              ${ILLUS[c.art]}
+              <div class="row-title">${escapeHtml(c.name)}</div>
+              <div class="row-sub">${escapeHtml(c.rate)}</div>
+            </button>`).join("")}
         </div>
-        <div id="rewardsPanel"></div>`;
-      document.querySelectorAll("[data-rtab]").forEach(btn => {
-        btn.onclick = () => { rewardsTab = btn.dataset.rtab; renderRewards(); renderRewardsPanel(); };
+        <div class="panel section" id="myVouchers">
+          <h3>My vouchers</h3>
+          ${vouchers.length
+            ? vouchers.map((v) => `
+              <div class="voucher-row">
+                <div class="row-title">${escapeHtml(v.title)}</div>
+                <div class="row-sub">${escapeHtml(v.code)} · ${escapeHtml(v.expires)}</div>
+              </div>`).join("")
+            : `<p class="muted">Rewards you redeem show up here.</p>`}
+        </div>
+        <div class="panel section">
+          <p class="gold-perks">Your Gold perks — 2 grace months available · your record is shareable with lenders · Black unlocks priority partner offers</p>
+        </div>
+        <p class="muted" style="font-size:0.72rem;text-align:center">Partner deals coming soon — your points will work with FNB partner apps.</p>`;
+      document.querySelectorAll("#screenRewards [data-cat]").forEach((btn) => {
+        btn.onclick = () => openCategorySheet(btn.dataset.cat);
       });
-      renderRewardsPanel();
     }
 
-    function renderRewardsPanel() {
-      const r = state.rewards;
-      const panel = document.getElementById("rewardsPanel");
-      if (!panel) return;
-      if (rewardsTab === "redeem") {
-        panel.innerHTML = `<div class="group-list redeem-list">${r.redemption_options.map(o => `
-          <button type="button" class="group-row" data-opt="${escapeHtml(o.id)}">
-            <span class="icon-wrap">${IC[REDEEM_IC[o.id]] || IC.gift}</span>
-            <div class="row-text">
-              <div class="row-title">${escapeHtml(o.title)}</div>
-              <div class="row-value">${escapeHtml(o.value_row)}</div>
-              <div class="row-rate">${escapeHtml(o.rate_short || o.rate)}</div>
-            </div>
-            ${IC.chevron}
-          </button>`).join("")}</div>`;
-        panel.querySelectorAll("[data-opt]").forEach(el => {
-          el.onclick = () => openRedeemSheet(el.dataset.opt);
+    function rewardCardHtml(card, pts) {
+      const need = Math.max(0, card.points - pts);
+      const can = need === 0;
+      const btn = can
+        ? `<button type="button" class="btn-primary" data-redeem-opt="${escapeHtml(card.option)}" data-redeem-pts="${card.points}">Redeem</button>`
+        : `<button type="button" class="btn-primary" disabled>Need ${fmtPts(need)} more points</button>`;
+      return `
+        <div class="reward-card">
+          ${ILLUS[card.art] || ILLUS.rent}
+          <div class="row-title">${escapeHtml(card.title)}</div>
+          <div class="row-sub">${escapeHtml(card.get)}</div>
+          <div class="reward-cost">${fmtPts(card.points)} pts</div>
+          ${btn}
+        </div>`;
+    }
+
+    function openCategorySheet(catId) {
+      const cat = REWARD_CATS.find((c) => c.id === catId);
+      if (!cat) return;
+      const pts = userPoints(state.user);
+      openSheet(`
+        <h3>${escapeHtml(cat.name)}</h3>
+        <div class="reward-carousel" id="rewardCarousel">
+          ${cat.cards.map((card) => rewardCardHtml(card, pts)).join("")}
+        </div>`);
+      document.querySelectorAll("#rewardCarousel [data-redeem-opt]").forEach((btn) => {
+        btn.onclick = () => {
+          const card = cat.cards.find((c) => c.option === btn.dataset.redeemOpt && String(c.points) === btn.dataset.redeemPts);
+          if (card) openRedeemConfirm(card);
+        };
+      });
+    }
+
+    function openRedeemConfirm(card) {
+      openSheet(`
+        <h3>${escapeHtml(card.confirm)}</h3>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="confirmRedeem">Confirm</button>
+          <button type="button" class="btn-secondary" id="cancelRedeem">Cancel</button>
+        </div>`);
+      document.getElementById("cancelRedeem").onclick = closeSheet;
+      document.getElementById("confirmRedeem").onclick = () => withBusy(async () => {
+        const prev = userPoints(state.user);
+        const data = await api("/api/redeem", {
+          method: "POST",
+          body: JSON.stringify({ option: card.option, points: card.points }),
         });
-      } else {
-        const b = r.benefits;
-        const tier = b.tier || "Gold";
-        const nextTier = b.next_tier || "Black";
-        panel.innerHTML = `
-          <div class="panel">
-            <h3>Your ${escapeHtml(tier)} tier</h3>
-            ${b.gold_unlocks.map(t => `<div class="benefit-line">${escapeHtml(t)}</div>`).join("")}
-          </div>
-          <div class="panel" style="margin-top:16px">
-            <h3>Unlock with ${escapeHtml(nextTier)}</h3>
-            ${(b.black_unlocks || []).map(t => `<div class="benefit-line">${escapeHtml(t)}</div>`).join("")}
-          </div>`;
-      }
+        closeSheet();
+        state = data;
+        renderAll();
+        animatePoints(prev, userPoints(state.user));
+        if (navigator.vibrate) navigator.vibrate(12);
+        const v = data.voucher;
+        toast(v ? `Redeemed · ${v.code}` : "Redeemed");
+      });
     }
 
     function progressGridHtml() {
@@ -1258,7 +1388,8 @@
               <p class="cal-caption">${escapeHtml(tl)}</p>
               <div class="cal-grid">${(p.months || []).map(m => `
                 <div class="cal-cell ${CAL_STATUS[m.status] ? m.status : "missed"}"><span class="mo">${escapeHtml(m.label)}</span><span class="mark">${escapeHtml(m.mark)}</span></div>`).join("")}
-              </div>` : ""}
+              </div>
+              <button type="button" class="btn-secondary" style="margin-top:10px" data-record-grace="${Number(p.bill_id || 0)}">Use a grace month</button>` : ""}
             </div>`).join("")}
         </div>`;
     }
@@ -1270,6 +1401,13 @@
           const i = +btn.dataset.progress;
           progressOpen = progressOpen === i ? -1 : i;
           renderRecord();
+        };
+      });
+      root.querySelectorAll("[data-record-grace]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const bill = paymentBillById(+btn.dataset.recordGrace);
+          if (bill) openGraceSheet(bill);
         };
       });
     }
@@ -1408,6 +1546,7 @@
       const lender = lenderShareName();
       openSheet(`
         <h3>Share your on-time record with ${escapeHtml(lender)}?</h3>
+        <p class="muted" style="margin-top:-6px;margin-bottom:8px">Demo lender: FNB</p>
         <p class="muted">They see on-time months, bills and predicted affordability. Nothing else.</p>
         <div class="sheet-actions">
           <button type="button" class="btn-primary" id="confirmShare">Confirm</button>
@@ -1605,58 +1744,6 @@
         renderAll();
         animatePoints(prev, state.user.available_points);
         toast("All Woza bills paid");
-      });
-    }
-
-    function openRedeemSheet(opt) {
-      const o = state.rewards.redemption_options.find(x => x.id === opt);
-      const pts = state.user.available_points;
-      const rate = o.rate_multiplier ?? 1.5;
-      openSheet(`
-        <h3>${escapeHtml(o.title)}</h3>
-        <p class="sheet-value" id="valOut">${escapeHtml(redeemValueLine(opt, pts, rate))}</p>
-        <label class="muted" for="ptsIn">Points</label>
-        <input type="number" id="ptsIn" min="1" value="${Number(pts)}" style="margin-top:8px" />
-        <div class="redeem-chips">
-          <button type="button" class="redeem-chip active" data-chip="all">All</button>
-          <button type="button" class="redeem-chip" data-chip="half">Half</button>
-        </div>
-        <div class="sheet-actions">
-          <button type="button" class="btn-primary" id="confirmRedeem"${pts > 0 ? "" : " disabled"}>Confirm</button>
-        </div>`);
-      const input = document.getElementById("ptsIn");
-      const chips = [...document.querySelectorAll(".redeem-chip")];
-      const upd = (source) => {
-        const n = +input.value || 0;
-        document.getElementById("valOut").textContent = redeemValueLine(opt, n, rate);
-        chips.forEach((c) => {
-          const kind = c.dataset.chip;
-          const match = (kind === "all" && n === pts) || (kind === "half" && n === Math.floor(pts / 2) && pts > 0);
-          c.classList.toggle("active", source ? kind === source : match);
-        });
-        document.getElementById("confirmRedeem").disabled = n <= 0 || n > pts;
-      };
-      input.oninput = () => upd(null);
-      chips.forEach((c) => {
-        c.onclick = () => {
-          input.value = c.dataset.chip === "half" ? Math.floor(pts / 2) : pts;
-          upd(c.dataset.chip);
-        };
-      });
-      upd("all");
-      document.getElementById("confirmRedeem").onclick = () => withBusy(async () => {
-        const points = +document.getElementById("ptsIn").value;
-        const prev = state.user.available_points;
-        const data = await api("/api/redeem", { method: "POST", body: JSON.stringify({ option: opt, points }) });
-        closeSheet();
-        state = data;
-        renderAll();
-        animatePoints(prev, state.user.available_points);
-        const msg = data.event?.success_message
-          || `${data.event?.value_display || ""} redeemed`;
-        if (navigator.vibrate) navigator.vibrate(12);
-        openSheet(`<svg class="sheet-check" viewBox="0 0 48 48" aria-hidden="true"><path class="sheet-check-mark" d="M12 24l8 8 16-16"/></svg><h3>Redeemed</h3><p class="muted">${escapeHtml(msg)}</p><div class="sheet-actions"><button type="button" class="btn-primary" id="doneR">Done</button></div>`);
-        document.getElementById("doneR").onclick = closeSheet;
       });
     }
 
