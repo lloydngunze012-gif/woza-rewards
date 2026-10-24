@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=29" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=30" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -215,8 +215,81 @@
       background-size: cover; background-position: center;
     }
     .reward-cost { font-size: 0.78rem; color: var(--muted); margin: 6px 0 10px; }
-    .voucher-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
-    .voucher-row:last-child { border-bottom: none; }
+    .voucher-banner {
+      position: relative;
+      background:
+        repeating-linear-gradient(-18deg, transparent, transparent 11px, rgba(255,255,255,0.05) 11px, rgba(255,255,255,0.05) 12px),
+        linear-gradient(145deg, #E11D48 0%, #BE123C 58%, #9F1239 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 16px 18px 14px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(159, 18, 57, 0.22);
+    }
+    .voucher-banner::before,
+    .voucher-banner::after {
+      content: "";
+      position: absolute;
+      top: 26px;
+      width: 18px;
+      height: 18px;
+      background: var(--bg);
+      border-radius: 50%;
+    }
+    .voucher-banner::before { left: -9px; }
+    .voucher-banner::after { right: -9px; }
+    .voucher-banner-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .voucher-banner h3 {
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.05rem;
+      letter-spacing: -0.02em; margin: 0; color: #fff;
+    }
+    .voucher-stamp {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,0.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+    }
+    .voucher-stamp svg {
+      width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2;
+    }
+    .voucher-count {
+      min-width: 28px; height: 28px; padding: 0 8px; border-radius: 99px;
+      display: grid; place-items: center;
+      background: #FFF7F2; color: #9F1239;
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 0.82rem;
+    }
+    .voucher-dash {
+      border: 0; height: 0;
+      border-top: 1.5px dashed rgba(255,255,255,0.38);
+      margin: 12px 4px 12px;
+    }
+    .voucher-empty {
+      border: 1.5px dashed rgba(255,255,255,0.45);
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      color: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.08);
+    }
+    .voucher-row {
+      background: #FFF7F2;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+    .voucher-row:first-of-type { margin-top: 0; }
+    .voucher-row .row-title { color: var(--ink); font-weight: 700; }
+    .voucher-row .row-sub { color: #7A3A3A; }
+    .voucher-row .voucher-code {
+      font-family: "Sora", sans-serif; font-weight: 700; font-size: 0.92rem;
+      letter-spacing: 0.08em; color: #9F1239; margin-top: 4px;
+    }
     .gold-perks { font-size: 0.82rem; line-height: 1.4; }
     .forecast-hero { text-align: center; padding: 20px 16px 16px; }
     .forecast-ring {
@@ -765,7 +838,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=29"></script>
+  <script src="/static/woza-card.js?v=30"></script>
 
   <script>
     const IC = {
@@ -786,6 +859,7 @@
       star: '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6L12 2z"/></svg>',
       shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
       chevron: '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>',
+      ticket: '<svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a2 2 0 010 3V17a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a2 2 0 010-3z"/><path d="M9 7v10"/></svg>',
     };
     const REDEEM_IC = { rent: "home", electricity: "zap", ride: "car", data: "wifi", fuel: "fuel", groceries: "basket", ebucks: "gift", cash: "landmark" };
     const LAUNCH_BILLS = [
@@ -1433,15 +1507,22 @@
               </span>
             </button>`).join("")}
         </div>
-        <div class="panel section" id="myVouchers">
-          <h3>My vouchers</h3>
+        <div class="voucher-banner section" id="myVouchers">
+          <div class="voucher-banner-head">
+            <h3>My vouchers</h3>
+            ${vouchers.length
+              ? `<span class="voucher-count">${vouchers.length}</span>`
+              : `<span class="voucher-stamp">${IC.ticket}</span>`}
+          </div>
+          <hr class="voucher-dash" />
           ${vouchers.length
             ? vouchers.map((v) => `
               <div class="voucher-row">
                 <div class="row-title">${escapeHtml(v.title)}</div>
-                <div class="row-sub">${escapeHtml(v.code)} · ${escapeHtml(v.expires)}</div>
+                <div class="voucher-code">${escapeHtml(v.code)}</div>
+                <div class="row-sub">Use by ${escapeHtml(v.expires)}</div>
               </div>`).join("")
-            : `<p class="muted">Rewards you redeem show up here.</p>`}
+            : `<p class="voucher-empty">Redeem a reward — it lands here.</p>`}
         </div>
         <div class="panel section">
           <p class="gold-perks">Your Gold perks — 2 grace months available · your record is shareable with lenders · Black unlocks priority partner offers</p>
@@ -2017,7 +2098,7 @@
     }
     if ("serviceWorker" in navigator) {
       if (useServiceWorker()) {
-        navigator.serviceWorker.register("/static/sw.js?v=29").catch(() => {});
+        navigator.serviceWorker.register("/static/sw.js?v=30").catch(() => {});
       } else {
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((r) => r.unregister());
