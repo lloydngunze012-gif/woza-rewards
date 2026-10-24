@@ -1,6 +1,5 @@
-const CACHE = "woza-v28";
+const CACHE = "woza-v29";
 const PRECACHE = [
-  "/",
   "/static/manifest.json",
   "/static/icon.svg",
   "/static/icon-192.png",
@@ -32,7 +31,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/api/")) return;
 
   if (url.pathname === "/" || url.pathname.endsWith(".html")) {
-    e.respondWith(staleWhileRevalidate(e.request));
+    e.respondWith(networkFirst(e.request));
     return;
   }
 
@@ -52,19 +51,13 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-async function staleWhileRevalidate(request) {
+async function networkFirst(request) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(request);
-  const network = fetch(request)
-    .then((r) => {
-      if (r.ok) cache.put(request, r.clone());
-      return r;
-    })
-    .catch(() => null);
-  if (cached) {
-    network.catch(() => {});
-    return cached;
+  try {
+    const fresh = await fetch(request, { cache: "no-store" });
+    if (fresh.ok) cache.put(request, fresh.clone());
+    return fresh;
+  } catch {
+    return (await cache.match(request)) || new Response("Offline", { status: 503, statusText: "Offline" });
   }
-  const fresh = await network;
-  return fresh || new Response("Offline", { status: 503, statusText: "Offline" });
 }

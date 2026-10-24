@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=28" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=29" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -765,7 +765,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=28"></script>
+  <script src="/static/woza-card.js?v=29"></script>
 
   <script>
     const IC = {
@@ -2017,7 +2017,7 @@
     }
     if ("serviceWorker" in navigator) {
       if (useServiceWorker()) {
-        navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+        navigator.serviceWorker.register("/static/sw.js?v=29").catch(() => {});
       } else {
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((r) => r.unregister());

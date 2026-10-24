@@ -1244,6 +1244,11 @@ def card_preview_page():
     return FileResponse(STATIC / "card-preview.html", headers=NO_CACHE)
 
 
+@app.get("/static/sw.js")
+def service_worker():
+    return FileResponse(STATIC / "sw.js", media_type="text/javascript", headers=NO_CACHE)
+
+
 @app.get("/static/og.jpg")
 def og_image():
     path = STATIC / "og.jpg"
