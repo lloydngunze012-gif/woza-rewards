@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=27" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=28" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -765,7 +765,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=27"></script>
+  <script src="/static/woza-card.js?v=28"></script>
 
   <script>
     const IC = {
@@ -1350,16 +1350,17 @@
       electricity: "/static/img/electricity.webp",
       ride: "/static/img/ride.webp",
       airtime: "/static/img/airtime.webp",
+      data: "/static/img/data.webp",
       fuel: "/static/img/fuel.webp",
       groceries: "/static/img/groceries.webp",
       restaurants: "/static/img/restaurants.webp",
-      card: "/static/img/card.webp",
+      ebucks: "/static/img/ebucks.webp",
       cash: "/static/img/cash.webp",
     };
     const TILE_PHOTO = { home: "rent", airtime: "airtime", fuel: "fuel", money: "cash" };
     const CARD_PHOTO = {
-      rent: "rent", electricity: "electricity", ride: "ride", data: "airtime", air: "airtime",
-      pump: "fuel", shop: "groceries", restaurant: "restaurants", bucks: "card", cash: "cash",
+      rent: "rent", electricity: "electricity", ride: "ride", data: "data", air: "airtime",
+      pump: "fuel", shop: "groceries", restaurant: "restaurants", bucks: "ebucks", cash: "cash",
     };
 
     const REWARD_CATS = [
@@ -1402,7 +1403,6 @@
         art: "money",
         cards: [
           { option: "cash", points: 12000, art: "cash", title: "R60 cash to bank", get: "0.5c per point", confirm: "Redeem 12 000 points for R60 cash to bank?" },
-          { option: "cash", points: 6000, art: "cash", title: "R30 cash to bank", get: "0.5c per point", confirm: "Redeem 6 000 points for R30 cash to bank?" },
           { option: "ebucks", points: 12000, art: "bucks", title: "R120 in eBucks", get: "1c per point", confirm: "Redeem 12 000 points for R120 in eBucks?" },
         ],
       },

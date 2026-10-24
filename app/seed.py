@@ -274,7 +274,6 @@ VOUCHER_TITLES = {
     ("groceries", 6_000): "R60 at partner stores",
     ("ebucks", 12_000): "R120 in eBucks",
     ("cash", 12_000): "R60 cash to bank",
-    ("cash", 6_000): "R30 cash to bank",
 }
 
 # approximate, update at launch

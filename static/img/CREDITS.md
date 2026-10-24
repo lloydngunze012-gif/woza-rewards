@@ -15,7 +15,11 @@ Converted to 800 px-wide WebP, under 60 KB, for Woza Rewards tiles and cards.
 - Source: curated photo supplied for this project
 
 ## airtime.webp
-- Use: Airtime & data tile and its cards
+- Use: Airtime & data tile; R60 airtime card
+- Source: curated photo supplied for this project
+
+## data.webp
+- Use: R120 of data card
 - Source: curated photo supplied for this project
 
 ## fuel.webp
@@ -32,11 +36,10 @@ Converted to 800 px-wide WebP, under 60 KB, for Woza Rewards tiles and cards.
 - Use: R120 at partner stores card
 - Source: curated photo supplied for this project
 
-## card.webp
+## ebucks.webp
 - Use: R120 in eBucks card
-- Source: https://unsplash.com/photos/1563013544-824ae1b704d3
-- Licence: Unsplash License (commercial use, no attribution required)
+- Source: curated photo supplied for this project
 
 ## cash.webp
-- Use: Money tile; cash to bank cards
+- Use: Money tile; R60 cash to bank card
 - Source: curated photo supplied for this project
