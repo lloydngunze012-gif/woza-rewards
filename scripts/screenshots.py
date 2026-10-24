@@ -275,6 +275,7 @@ def capture_rewards(page: Page) -> None:
     show_tab(page, "rewards")
     page.wait_for_selector("#screenRewards .cat-tile", timeout=10_000)
     page.wait_for_selector("#myVouchers", timeout=10_000)
+    page.wait_for_selector("#screenRewards .gold-plate", timeout=10_000)
     page.wait_for_selector("#rewardsPts", timeout=10_000)
 
 
