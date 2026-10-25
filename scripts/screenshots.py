@@ -165,7 +165,7 @@ def show_tab(page: Page, tab: str) -> None:
         "rewards": "screenRewards",
         "record": "screenRecord",
     }[tab]
-    page.wait_for_selector(f"#{screen_id}:not(.hidden)", timeout=10_000)
+    page.wait_for_selector(f"#{screen_id}.is-active", timeout=10_000)
 
 
 def sign_in(page: Page, base_url: str) -> None:
@@ -198,7 +198,7 @@ def content_height(page: Page) -> int:
     return int(
         page.evaluate(
             """() => {
-              const screen = document.querySelector('#appView:not(.hidden) .screen:not(.hidden)');
+              const screen = document.querySelector('#appView:not(.hidden) .screen.is-active');
               const login = document.querySelector('#loginView:not(.hidden)');
               const el = screen || login || document.body;
               return Math.max(el.scrollHeight || 0, el.offsetHeight || 0, 844);
@@ -324,7 +324,7 @@ def capture_rewards_voucher(page: Page, base_url: str) -> None:
 
 def capture_record(page: Page) -> None:
     show_tab(page, "record")
-    page.wait_for_selector("#screenRecord:not(.hidden)", timeout=10_000)
+    page.wait_for_selector("#screenRecord.is-active", timeout=10_000)
     page.wait_for_selector("#screenRecord .progress-item", timeout=10_000)
     page.wait_for_selector("#shareRecordBtn", timeout=10_000)
     page.wait_for_selector("#screenRecord >> text=shared with the credit bureau", timeout=10_000)

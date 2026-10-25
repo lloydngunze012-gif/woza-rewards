@@ -925,6 +925,18 @@ class RedeemBody(ApiModel):
     amount_cents: int | None = Field(default=None, gt=0)
 
 
+def _user_with_graph(db: Session, user_id: int) -> User | None:
+    return (
+        db.query(User)
+        .filter(User.id == user_id)
+        .options(
+            joinedload(User.bills).joinedload(Bill.payments),
+            joinedload(User.bills).joinedload(Bill.grace_uses),
+        )
+        .first()
+    )
+
+
 @app.post("/api/login")
 @limiter.limit(API_RATE_LIMIT)
 def login(request: Request, body: LoginBody, response: Response, db: DbDep):
@@ -935,7 +947,10 @@ def login(request: Request, body: LoginBody, response: Response, db: DbDep):
     existing = user_for_session(db, sid)
     user = replace_session_user(db, session_key=sid, name=name, existing=existing)
     set_session_cookie(response, sid)
-    return {"ok": True, "name": user.name}
+    user = _user_with_graph(db, user.id)
+    if not user:
+        raise HTTPException(500, "Could not load your profile")
+    return build_me_payload(user, db)
 
 
 @app.post("/api/logout")
@@ -949,15 +964,7 @@ def logout(request: Request, response: Response, body: EmptyBody = EmptyBody()):
 @limiter.limit(API_RATE_LIMIT)
 def me(request: Request, db: DbDep):
     user = require_user(request, db)
-    user = (
-        db.query(User)
-        .filter(User.id == user.id)
-        .options(
-            joinedload(User.bills).joinedload(Bill.payments),
-            joinedload(User.bills).joinedload(Bill.grace_uses),
-        )
-        .first()
-    )
+    user = _user_with_graph(db, user.id)
     return build_me_payload(user, db)
 
 
