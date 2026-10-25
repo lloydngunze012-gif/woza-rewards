@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" media="print" onload="this.media='all'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/static/woza-card.css?v=31" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=32" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -160,10 +160,27 @@
       display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
       margin: 12px 0;
     }
-    .month-bill { text-align: center; min-width: 0; }
+    .month-bill {
+      text-align: center; min-width: 0;
+      padding: 8px 4px 10px; border-radius: 12px;
+      min-height: 44px;
+    }
     .month-bill .icon-wrap { margin: 0 auto 6px; }
-    .month-bill .row-title { font-size: 0.82rem; }
+    .month-bill .row-title {
+      font-size: 0.82rem;
+      text-decoration: underline;
+      text-decoration-color: rgba(91, 43, 217, 0.35);
+      text-underline-offset: 3px;
+    }
     .month-bill .font-num { font-size: 0.88rem; margin-top: 2px; }
+    .month-bill-chevron {
+      display: inline-block; width: 12px; height: 12px; margin-left: 2px;
+      vertical-align: -1px;
+    }
+    .month-bill-chevron svg {
+      width: 12px; height: 12px; stroke: var(--muted); fill: none; stroke-width: 2;
+    }
+    .month-bill:active, .month-bill.is-press { background: var(--primary-soft); }
     .login-or {
       text-align: center; color: var(--muted); font-size: 0.82rem;
       margin: 16px 0 8px;
@@ -792,7 +809,8 @@
       .desk-line { color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
       .desk-hint { margin-top: 20px; font-size: 0.78rem; color: var(--muted); }
       .phone-frame {
-        display: block; flex-shrink: 0; box-sizing: content-box;
+        display: block; position: relative; overflow: hidden; flex-shrink: 0;
+        box-sizing: content-box;
         width: 390px; height: 844px; padding: 12px;
         background: #1C1530; border-radius: 44px;
         box-shadow: 0 28px 64px rgba(28, 21, 48, 0.22), 0 6px 18px rgba(28, 21, 48, 0.1);
@@ -820,11 +838,28 @@
         transform: none; width: 100%; max-width: none;
         border-radius: 0 0 32px 32px;
       }
-      .sheet {
-        left: 0; width: 100%; max-width: none;
-        transform: translateY(100%);
+      .sheet-backdrop,
+      .sheet,
+      .toast,
+      .streak-moment {
+        position: absolute;
+        max-width: 390px;
       }
-      .sheet.open { transform: translateY(0); }
+      .sheet-backdrop { inset: 0; }
+      .sheet {
+        left: 50%; bottom: 0; width: 100%;
+        transform: translate(-50%, 100%);
+        max-height: calc(100% - 12px);
+      }
+      .sheet.open { transform: translate(-50%, 0); }
+      .toast {
+        left: 50%;
+        bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+      }
+      .streak-moment {
+        left: 50%; top: 0; transform: translateX(-50%);
+        width: 100%; height: 100%;
+      }
       .phone-screen .screen,
       .phone-screen .login-wrap {
         scrollbar-width: thin;
@@ -903,7 +938,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=31"></script>
+  <script src="/static/woza-card.js?v=32"></script>
 
   <script>
     const IC = {
@@ -1026,6 +1061,7 @@
     let scrollBillId = null;
     let progressOpen = 0;
     let homeIntroPlayed = false;
+    let flipHintSeen = false;
     let homeIntroTimers = [];
     let streakHold = null;
     let toastTimer = null;
@@ -1146,13 +1182,23 @@
 
     function membershipCard(u, compact) {
       syncWozaCardConfig();
-      return WozaCard.membershipCardStageHtml(u, compact, { hint: !compact });
+      return WozaCard.membershipCardStageHtml(u, compact, { hint: !compact && !flipHintSeen });
     }
 
     function bindMembershipCards() {
       syncWozaCardConfig();
       WozaCard.bindMembershipCards();
       WozaCard.bindCardFlips();
+      document.querySelectorAll("[data-card-flip]").forEach((stage) => {
+        if (stage._hintBound) return;
+        stage._hintBound = true;
+        stage.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          if (flipHintSeen) return;
+          flipHintSeen = true;
+          stage.querySelectorAll(".card-flip-hint").forEach((el) => el.remove());
+        });
+      });
     }
 
     function prefersReduced() {
@@ -1387,11 +1433,11 @@
         lineHtml = `<p class="home-status">Pay on ${escapeHtml(due)} to make it ${months + 1}.</p>`;
       }
       const monthBills = bills.map((b) => `
-        <div class="month-bill">
+        <button type="button" class="month-bill" data-month-bill="${Number(b.id)}">
           <span class="icon-wrap">${IC[b.category] || IC.rent}</span>
-          <div class="row-title">${escapeHtml(shortBillName(b))}</div>
+          <div class="row-title">${escapeHtml(shortBillName(b))}<span class="month-bill-chevron">${IC.chevron}</span></div>
           <div class="font-num">${escapeHtml(b.amount_display || randFromCents(b.amount_cents))}</div>
-        </div>`).join("");
+        </button>`).join("");
       const payBtnHtml = (p.payable_outstanding && payAmt)
         ? `<button type="button" class="btn-primary" id="homePayWoza">Pay ${escapeHtml(payAmt)} through Woza</button>`
         : "";
@@ -1430,6 +1476,14 @@
       }
       const gear = document.getElementById("homeGear");
       if (gear) gear.onclick = openHomeSettings;
+      document.querySelectorAll("#thisMonth [data-month-bill]").forEach((btn) => {
+        btn.onclick = () => {
+          const bill = paymentBillById(btn.dataset.monthBill);
+          if (!bill) return;
+          if (bill.category === "car" || bill.is_bank_debit) openCarDebitSheet(bill);
+          else openPaySheet(bill);
+        };
+      });
     }
 
     function renderPayments() {
@@ -1995,6 +2049,17 @@
       }
     }
 
+    function openCarDebitSheet(bill) {
+      const amt = bill.amount_display || randFromCents(bill.amount_cents);
+      const due = dueShortDate();
+      openSheet(`
+        <h3>Car instalment · ${escapeHtml(amt)} · debit order ${escapeHtml(due)} · confirmed by your bank when it clears</h3>
+        <div class="sheet-actions">
+          <button type="button" class="btn-secondary" id="closeCarDebit">Close</button>
+        </div>`);
+      document.getElementById("closeCarDebit").onclick = closeSheet;
+    }
+
     function openPaySheet(bill) {
       openSheet(`
         <h3>${escapeHtml(bill.pay_sheet_title)}</h3>
@@ -2065,6 +2130,7 @@
         recordMode = "record";
         rewardsTab = "redeem";
         armHomeIntro();
+        flipHintSeen = false;
         try { sessionStorage.removeItem("woza.flipHint"); } catch { /* ignore */ }
         closeSheet();
         renderAll();
@@ -2172,7 +2238,7 @@
     }
     if ("serviceWorker" in navigator) {
       if (useServiceWorker()) {
-        navigator.serviceWorker.register("/static/sw.js?v=31").catch(() => {});
+        navigator.serviceWorker.register("/static/sw.js?v=32").catch(() => {});
       } else {
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((r) => r.unregister());

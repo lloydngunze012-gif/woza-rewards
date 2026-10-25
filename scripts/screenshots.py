@@ -51,6 +51,7 @@ SCREENS = [
     "lender_view",
     "what_if",
     "settings",
+    "rewards_category_desktop",
 ]
 
 
@@ -377,6 +378,25 @@ def capture_settings(page: Page) -> None:
     page.wait_for_selector("#resetBtn", timeout=10_000)
 
 
+DESKTOP_VIEWPORT = {"width": 1280, "height": 800}
+
+
+def snap_desktop(page: Page, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    page.set_viewport_size(DESKTOP_VIEWPORT)
+    page.wait_for_timeout(120)
+    page.screenshot(path=str(dest), full_page=False)
+
+
+def capture_rewards_category_desktop(page: Page, base_url: str) -> None:
+    page.set_viewport_size(DESKTOP_VIEWPORT)
+    sign_in(page, base_url)
+    reset_demo(page, base_url)
+    capture_rewards_category(page)
+    page.wait_for_selector("#sheet.open", timeout=10_000)
+    page.wait_for_selector("#rewardCarousel .reward-card", timeout=10_000)
+
+
 CAPTURE_FNS = {
     "login": lambda page, base_url: capture_login(page, base_url),
     "home": lambda page, base_url: capture_home(page),
@@ -393,6 +413,7 @@ CAPTURE_FNS = {
     "lender_view": lambda page, base_url: capture_lender_view(page),
     "what_if": lambda page, base_url: capture_what_if(page),
     "settings": lambda page, base_url: capture_settings(page),
+    "rewards_category_desktop": lambda page, base_url: capture_rewards_category_desktop(page, base_url),
 }
 
 
@@ -519,7 +540,7 @@ def main() -> int:
             reset_demo(page, base_url)
 
             for name in SCREENS:
-                if name == "login":
+                if name == "login" or name == "rewards_category_desktop":
                     continue
                 try:
                     close_sheets(page)
@@ -551,6 +572,27 @@ def main() -> int:
                     except Exception:
                         pass
                     print(f"  FAIL {name}: {exc}", flush=True)
+
+            try:
+                desk_ctx = browser.new_context(
+                    viewport=DESKTOP_VIEWPORT,
+                    device_scale_factor=1,
+                    is_mobile=False,
+                    has_touch=False,
+                    reduced_motion="reduce",
+                )
+                desk = desk_ctx.new_page()
+                desk.set_default_navigation_timeout(25_000)
+                desk.set_default_timeout(15_000)
+                capture_rewards_category_desktop(desk, base_url)
+                wait_settled(desk)
+                snap_desktop(desk, LATEST_DIR / "rewards_category_desktop.png")
+                captured.append("rewards_category_desktop")
+                print("  OK  rewards_category_desktop", flush=True)
+                desk_ctx.close()
+            except Exception as exc:
+                failed.append(f"rewards_category_desktop: {exc}")
+                print(f"  FAIL rewards_category_desktop: {exc}", flush=True)
 
             context.close()
             browser.close()
