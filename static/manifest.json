@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Woza Rewards",
   "short_name": "Woza",
   "description": "Pay today. Earn tomorrow.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F6F4FB",
   "theme_color": "#5B2BD9",

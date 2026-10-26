@@ -41,7 +41,7 @@
   <link rel="preload" href="/static/img/groceries.webp" as="image" />
   <link rel="preload" href="/static/img/restaurants.webp" as="image" />
   <link rel="preload" href="/static/img/ebucks.webp" as="image" />
-  <link rel="stylesheet" href="/static/woza-card.css?v=34" />
+  <link rel="stylesheet" href="/static/woza-card.css?v=36" />
   <style>
     :root {
       --bg: #F6F4FB;
@@ -71,17 +71,23 @@
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+    }
     body {
       font-family: "DM Sans", system-ui, sans-serif;
       background: var(--bg);
       color: var(--ink);
       -webkit-tap-highlight-color: transparent;
+      touch-action: pan-y;
     }
     .font-num { font-family: "Sora", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.045em; }
     .phone {
       max-width: 390px; min-height: 100%; margin: 0 auto; position: relative;
       padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+      overflow-x: hidden;
     }
     .hidden { display: none !important; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
@@ -228,14 +234,19 @@
       line-height: 1.25; text-shadow: 0 1px 6px rgba(28, 21, 48, 0.4);
     }
     .reward-carousel {
-      display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+      display: flex; align-items: stretch; gap: 12px;
+      overflow-x: auto; scroll-snap-type: x mandatory;
       padding: 4px 2px 10px; margin: 0 -4px;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
     }
     .reward-card {
       flex: 0 0 78%; scroll-snap-align: start;
+      display: flex; flex-direction: column;
       background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
       padding: 14px;
     }
+    .reward-card .btn-primary { margin-top: auto; }
     .reward-photo {
       height: 88px; border-radius: 12px; margin-bottom: 10px;
       background-color: #3A2468;
@@ -666,18 +677,14 @@
     @keyframes ripple {
       to { transform: translate(-50%, -50%) scale(12); opacity: 0; }
     }
-    .tab-viewport { position: relative; min-height: 100%; }
-    #appView .screen {
-      transition: transform 160ms var(--ease-out);
-    }
+    .tab-viewport { position: relative; min-height: 100%; overflow-x: hidden; }
     #appView .screen:not(.is-active) {
       position: absolute; left: 0; right: 0; top: 0; width: 100%;
       visibility: hidden; pointer-events: none;
-      transform: translateX(16px);
     }
     #appView .screen.is-active {
       position: relative; visibility: visible; pointer-events: auto;
-      transform: translateX(0); z-index: 1;
+      z-index: 1;
     }
     .tab-skeleton {
       position: absolute; inset: 0; z-index: 2;
@@ -815,6 +822,7 @@
       border: 1px solid var(--line); background: var(--bg); color: var(--primary);
     }
     .demo-note { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 16px; }
+    .install-app { margin-top: 16px; }
     @media (prefers-reduced-motion: reduce) {
       .mem-points { transition: none !important; }
     }
@@ -960,6 +968,7 @@
       <p class="err" id="loginErr"></p>
       <p class="muted" id="bootStatus" style="margin-top:12px;font-size:0.82rem;display:none">Connecting…</p>
     </div>
+    <button type="button" class="btn-secondary install-app hidden" id="installBtn" data-install-app>Install Woza</button>
   </div>
 
   <div id="appView" class="phone hidden">
@@ -1000,7 +1009,7 @@
     </div>
   </div>
   <script src="/static/qrcode.js"></script>
-  <script src="/static/woza-card.js?v=34"></script>
+  <script src="/static/woza-card.js?v=36"></script>
 
   <script>
     const IC = {
@@ -1066,7 +1075,7 @@
       const display = fmtRandCents(cents);
       const units = redeemUnits();
       if (id === "rent") return `${display} off rent`;
-      if (id === "electricity") return `${display} of electricity, about ${aboutUnits(rands, units.electricity)} units`;
+      if (id === "electricity") return `${display} prepaid · ${aboutUnits(rands, units.electricity)} units`;
       if (id === "ride") return `${display} off a ride`;
       if (id === "data") return `${display} of data, about ${aboutUnits(rands, units.data)} GB`;
       if (id === "fuel") return `${display} of fuel, about ${aboutUnits(rands, units.fuel)} litres`;
@@ -1669,7 +1678,7 @@
         art: "home",
         cards: [
           { option: "rent", points: 12000, art: "rent", title: "R180 off next rent", get: "1.5c per point", confirm: "Redeem 12 000 points for R180 off your next rent?" },
-          { option: "electricity", points: 8000, art: "electricity", title: "R120 prepaid electricity, about 55 units", get: "1.5c per point", confirm: "Redeem 8 000 points for R120 prepaid electricity?" },
+          { option: "electricity", points: 8000, art: "electricity", title: "R120 prepaid · 55 units", get: "1.5c per point", confirm: "Redeem 8 000 points for R120 prepaid electricity?" },
           { option: "ride", points: 6000, art: "ride", title: "R90 off a ride", get: "1.5c per point", confirm: "Redeem 6 000 points for R90 off a ride?" },
         ],
       },
@@ -1894,6 +1903,7 @@
           <div class="row-sub">${bank.consent_active ? escapeHtml(bank.consent_until) : "Consent revoked"}</div>
         </button>` : ""}
         <div class="sheet-actions">
+          ${canOfferInstall() ? `<button type="button" class="btn-secondary" id="installAppBtn">Install Woza</button>` : ""}
           <button type="button" class="btn-secondary" id="signOutBtn">Sign out</button>
           <button type="button" class="btn-primary" id="resetBtn" style="background:#b91c1c">Reset demo</button>
         </div>
@@ -1902,6 +1912,8 @@
       if (bankBtn) bankBtn.onclick = openBankSheet;
       document.getElementById("resetBtn").onclick = openResetSheet;
       document.getElementById("signOutBtn").onclick = () => withBusy(signOut, { toast: false });
+      const installAppBtn = document.getElementById("installAppBtn");
+      if (installAppBtn) installAppBtn.onclick = promptInstall;
     }
 
     function renderRecord() {
@@ -2364,9 +2376,64 @@
       if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
       return true;
     }
+    let deferredInstall = null;
+    function isStandaloneApp() {
+      return window.matchMedia("(display-mode: standalone)").matches
+        || window.matchMedia("(display-mode: fullscreen)").matches
+        || navigator.standalone === true;
+    }
+    function isIosSafari() {
+      const ua = navigator.userAgent || "";
+      const ios = /iPad|iPhone|iPod/.test(ua)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      return ios && /WebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    }
+    function canOfferInstall() {
+      return !isStandaloneApp() && !!(deferredInstall || isIosSafari());
+    }
+    function showInstallButtons() {
+      if (isStandaloneApp()) return;
+      document.querySelectorAll("[data-install-app]").forEach((el) => el.classList.remove("hidden"));
+    }
+    function hideInstallButtons() {
+      document.querySelectorAll("[data-install-app]").forEach((el) => el.classList.add("hidden"));
+    }
+    function openIosInstallSheet() {
+      openSheet(`
+        <h3>Add Woza to your Home Screen</h3>
+        <p class="muted">Tap Share, then Add to Home Screen. Woza opens like an app.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn-primary" id="closeInstallHint">Close</button>
+        </div>`);
+      document.getElementById("closeInstallHint").onclick = closeSheet;
+    }
+    async function promptInstall() {
+      if (deferredInstall) {
+        deferredInstall.prompt();
+        const choice = await deferredInstall.userChoice.catch(() => null);
+        deferredInstall = null;
+        if (choice && choice.outcome === "accepted") hideInstallButtons();
+        return;
+      }
+      if (isIosSafari()) openIosInstallSheet();
+    }
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstall = e;
+      showInstallButtons();
+    });
+    window.addEventListener("appinstalled", hideInstallButtons);
+    if (isIosSafari() && !isStandaloneApp()) showInstallButtons();
+    const installBtn = document.getElementById("installBtn");
+    if (installBtn) installBtn.onclick = promptInstall;
     if ("serviceWorker" in navigator) {
       if (useServiceWorker()) {
-        navigator.serviceWorker.register("/static/sw.js?v=34").catch(() => {});
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((r) => {
+            if (r.scope.includes("/static")) r.unregister();
+          });
+        });
+        navigator.serviceWorker.register("/sw.js?v=36", { scope: "/" }).catch(() => {});
       } else {
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((r) => r.unregister());

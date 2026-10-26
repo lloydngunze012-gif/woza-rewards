@@ -248,7 +248,7 @@ def redeem_value_row(opt_id: str, points: int) -> str:
         return f"{display} off rent"
     if opt_id == "electricity":
         n = about_units(rands, units["electricity"])
-        return f"{display} of electricity, about {n} units"
+        return f"{display} prepaid · {n} units"
     if opt_id == "ride":
         return f"{display} off a ride"
     if opt_id == "data":
@@ -1238,6 +1238,10 @@ def health(request: Request):
 
 
 NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+SW_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Service-Worker-Allowed": "/",
+}
 OG_CACHE = {"Cache-Control": "public, max-age=604800"}
 
 
@@ -1251,9 +1255,23 @@ def card_preview_page():
     return FileResponse(STATIC / "card-preview.html", headers=NO_CACHE)
 
 
+@app.get("/sw.js")
+def service_worker_root():
+    return FileResponse(STATIC / "sw.js", media_type="text/javascript", headers=SW_HEADERS)
+
+
 @app.get("/static/sw.js")
 def service_worker():
-    return FileResponse(STATIC / "sw.js", media_type="text/javascript", headers=NO_CACHE)
+    return FileResponse(STATIC / "sw.js", media_type="text/javascript", headers=SW_HEADERS)
+
+
+@app.get("/static/manifest.json")
+def web_manifest():
+    return FileResponse(
+        STATIC / "manifest.json",
+        media_type="application/manifest+json",
+        headers=NO_CACHE,
+    )
 
 
 @app.get("/static/og.jpg")

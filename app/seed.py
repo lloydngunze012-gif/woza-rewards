@@ -265,7 +265,7 @@ REDEMPTION_TITLES = {
 
 VOUCHER_TITLES = {
     ("rent", 12_000): "R180 off next rent",
-    ("electricity", 8_000): "R120 prepaid electricity, about 55 units",
+    ("electricity", 8_000): "R120 prepaid · 55 units",
     ("ride", 6_000): "R90 off a ride",
     ("data", 12_000): "R120 of data, about 2 GB",
     ("airtime", 6_000): "R60 airtime",
